@@ -69,14 +69,11 @@ export const PasswordContextProvider: React.FC<Props> = ({children}) => {
         let receivedResponse = true;
         const timer = setInterval(() => {
             if (receivedResponse) {
-                console.debug('Sending keepAlive');
                 receivedResponse = false;
                 chrome.runtime.sendMessage({type: 'keepAlive'}, (response) => {
-                    console.debug('Received keepAlive from service worker:', response);
                     receivedResponse = !passwordHash || response.cacheState;
                 });
             } else if (passwordHash) {
-                console.debug('No service worker keepAlive received, trying store password hash again');
                 storePasswordHash(passwordHash, () => {
                     receivedResponse = true;
                 });
