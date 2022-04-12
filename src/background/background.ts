@@ -56,10 +56,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (_context.passwordHashTimer !== undefined) {
             clearTimeout(_context.passwordHashTimer);
         }
-        _context.passwordHashTimer = setTimeout(() => {
-            _context.passwordHash = undefined;
-            _context.passwordHashTimer = undefined;
-        }, message.passwordHashTtl * 1000);
+        if (_context.passwordHash !== undefined) {
+            _context.passwordHashTimer = setTimeout(() => {
+                _context.passwordHash = undefined;
+                _context.passwordHashTimer = undefined;
+            }, message.passwordHashTtl * 1000);
+        }
         sendResponse({});
     } else if (message.type === 'getPasswordHash') {
         sendResponse({

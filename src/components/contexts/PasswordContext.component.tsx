@@ -44,14 +44,14 @@ export const PasswordContextProvider: React.FC<Props> = ({children}) => {
     }, [isInitial, passwordHash]);
 
     useEffect(() => {
-        if (matchesChecksum(passwordHash, storage.passwordChecksum)) {
+        if (matchesChecksum(passwordHash, storage.passwordChecksum) || (passwordHash === undefined && !isInitial)) {
             chrome.runtime.sendMessage({
                 type: 'storePasswordHash',
                 passwordHash: passwordHash,
-                passwordHashTtl: PASSWORD_TTL
+                passwordHashTtl: passwordHash ? PASSWORD_TTL : undefined
             })
         }
-    }, [passwordHash, storage]);
+    }, [isInitial, passwordHash, storage]);
 
     return (
         <PasswordContext.Provider value={{
