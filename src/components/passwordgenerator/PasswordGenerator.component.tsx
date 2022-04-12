@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { derivePassword as doDerivePassword } from '../../lib/derivation';
+import { PageContext } from '../contexts/PageContext.component';
 import { PasswordContext } from '../contexts/PasswordContext.component';
 import { StorageContext } from '../contexts/StorageContext.component';
 import { UIGroup } from '../uiutils/UIGroup.component';
@@ -9,6 +10,7 @@ import classes from './PasswordGenerator.module.scss';
 export const PasswordGenerator: React.FC = () => {
     const storage = useContext(StorageContext);
     const passwordContext = useContext(PasswordContext);
+    const context = useContext(PageContext);
 
     const derivePassword = (): string|undefined => {
         const hash = passwordContext?.hash;
@@ -23,7 +25,7 @@ export const PasswordGenerator: React.FC = () => {
 
     const copyPasswordToClipboard = () => {
         const password = derivePassword();
-        if (!password) return undefined;
+        if (!password) return;
 
         navigator.clipboard.writeText(password);
         window.close();
@@ -31,14 +33,20 @@ export const PasswordGenerator: React.FC = () => {
 
     const injectPassword = () => {
         const password = derivePassword();
-        if (!password) return undefined;
+        if (!password || !context) return;
 
-        chrome.tabs.executeScript({code: `
-            for (const input of document.getElementsByTagName('input')) {
-                if (input.type === 'password')
-                    input.value = '${password}';
-            }
-        `});
+        chrome.scripting.executeScript({
+            target: {tabId: context.tabId},
+            func: password => {
+                const inputElements = document.getElementsByTagName('input');
+                for (let idx = 0; idx < inputElements.length; idx++) {
+                    const input = inputElements.item(idx);
+                    if (input !== null && input.type === 'password')
+                        input.value = password;
+                }
+            },
+            args: [password]
+        });
         window.close();
     };
 
