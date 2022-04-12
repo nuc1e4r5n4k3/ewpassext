@@ -8,11 +8,15 @@
     "permissions": [
         "activeTab",
         "scripting",
-        "storage"
+        "storage",
+        "webNavigation"
     ],
     "action": {
          "title": "E. W. Password Generator - Chromium Extension Edition",
          "default_popup": "index.html"
+    },
+    "background": {
+        "service_worker": "background.js"
     },
     "host_permissions": [
         "https://*/*"

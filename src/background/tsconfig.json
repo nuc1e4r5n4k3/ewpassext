@@ -16,15 +16,11 @@
         "module": "esnext",
         "moduleResolution": "node",
         "resolveJsonModule": true,
-        "isolatedModules": true,
-        "noEmit": true,
-        "jsx": "react-jsx"
+        "isolatedModules": false,
+        "noEmit": false,
+        "outDir": "../../build"
     },
     "include": [
-        "src",
-        "react-app-env.d.ts"
-    ],
-    "exclude": [
-        "src/background"
+        "."
     ]
 }
