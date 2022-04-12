@@ -38,11 +38,20 @@ export const PasswordGenerator: React.FC = () => {
         chrome.scripting.executeScript({
             target: {tabId: context.tabId},
             func: password => {
-                const inputElements = document.getElementsByTagName('input');
-                for (let idx = 0; idx < inputElements.length; idx++) {
-                    const input = inputElements.item(idx);
-                    if (input !== null && input.type === 'password')
-                        input.value = password;
+                const getInputElements = (document: Document) =>
+                    Array.from(document.getElementsByTagName('input')).filter(input => input.type === 'password');
+
+                const injectPassword = (inputs: HTMLInputElement[]) => {
+                    for (let idx = 0; idx < inputs.length; idx++) {
+                        inputs[idx].value = password;
+                    }
+                };
+
+                injectPassword(getInputElements(document));
+
+                for (const iframe of Array.from(document.getElementsByTagName('iframe'))) {
+                    if (iframe.contentDocument)
+                        injectPassword(getInputElements(iframe.contentDocument));
                 }
             },
             args: [password]
