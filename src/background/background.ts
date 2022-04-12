@@ -1,4 +1,11 @@
 
+type Context = {
+    passwordHash?: string;
+    passwordHashTimer?: NodeJS.Timeout;
+};
+
+let _context: Context = {};
+
 chrome.webNavigation.onCompleted.addListener(e => {
     if (e.url.substr(0, 8) !== 'https://') {
         return;
@@ -35,12 +42,26 @@ chrome.webNavigation.onCompleted.addListener(e => {
     });
 });
 
-chrome.runtime.onMessage.addListener(e => {
-    if (e.type === 'openPopup') {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'openPopup') {
         try {
             (chrome.action as any).openPopup();
         } catch (e) {
             console.debug(e);
         }
+    } else if (message.type === 'storePasswordHash') {
+        _context.passwordHash = message.passwordHash;
+        if (_context.passwordHashTimer !== undefined) {
+            clearTimeout(_context.passwordHashTimer);
+        }
+        _context.passwordHashTimer = setTimeout(() => {
+            _context.passwordHash = undefined;
+            _context.passwordHashTimer = undefined;
+        }, message.passwordHashTtl * 1000);
+    } else if (message.type === 'getPasswordHash') {
+        sendResponse({
+            type: 'passwordHash',
+            passwordHash: _context.passwordHash
+        });
     }
 });

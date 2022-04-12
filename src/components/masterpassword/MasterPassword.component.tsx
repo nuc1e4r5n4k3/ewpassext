@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Checksum } from '../checksum/Checksum.component';
-import { PasswordContext } from '../contexts/PasswordContext.component';
+import { PasswordContext, PASSWORD_TTL } from '../contexts/PasswordContext.component';
 import { StorageContext } from '../contexts/StorageContext.component';
 import { UIGroup } from '../uiutils/UIGroup.component';
 import classes from './MasterPassword.module.scss';
@@ -20,7 +20,7 @@ export const MasterPassword: React.FC = () => {
 
     useEffect(() => {
         if (passwordContext?.hash) {
-            setPasswordClearTime(now + (passwordContext.correct ? 300 : 3));
+            setPasswordClearTime(now + (passwordContext.correct ? PASSWORD_TTL : 3));
         } else {
             passwordInput.current?.focus();
             setPasswordClearTime(undefined);
