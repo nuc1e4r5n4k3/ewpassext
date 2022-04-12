@@ -1,0 +1,10 @@
+.Row {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.Row > div {
+    vertical-align: middle;
+    flex: 1;
+}

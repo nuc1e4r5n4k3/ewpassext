@@ -1,0 +1,27 @@
+.wrapper {
+    display: inline;
+}
+
+.wrapper div {
+    display: inline;
+}
+
+.checksum {
+    text-transform: uppercase;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+}
+
+.status {
+    margin-left: 10px;
+    font-size: 150%;
+    vertical-align: middle;
+}
+
+.buttonWrapper {
+    margin: 0px 8px;
+}
+
+.clear {
+    margin-left: 10px;
+}
