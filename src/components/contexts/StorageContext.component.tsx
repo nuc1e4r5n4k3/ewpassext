@@ -17,6 +17,7 @@ export interface IStorageContext {
 
     setPasswordChecksum?: (checksum?: string) => void;
     setConfigForCurrentDomain?: (config: IDomainConfig) => void;
+    removeConfigForCurrentDomain?: () => void;
     selectDomain?: (domainId: string, domain: string) => void;
 
     getConfigForDomainId?: (domainId: string) => IDomainConfig|undefined;
@@ -57,12 +58,18 @@ export const StorageContextProvider: React.FC<Props> = ({children}) => {
     const getDomainConfig = (domainId: string): IDomainConfig|undefined => 
         domainId in domainConfigs ? domainConfigs[domainId] : undefined;
 
-    const updateCurrentDomainConfig = (config: IDomainConfig) => {
+    const updateCurrentDomainConfig = (config: IDomainConfig|undefined) => {
         if (!currentDomainId)
             return;
 
         let configs = {...domainConfigs};
-        configs[currentDomainId] = config;
+
+        if (config !== undefined) {
+            configs[currentDomainId] = config;
+        } else if (currentDomainId in configs) {
+            delete configs[currentDomainId];
+        }
+
         setDomainConfigs(configs);
     };
 
@@ -70,9 +77,7 @@ export const StorageContextProvider: React.FC<Props> = ({children}) => {
     useEffect(() => store('metadata', domainConfigs), [domainConfigs]);
 
     useEffect(() => {
-        if (currentDomainId && currentDomainId in domainConfigs) {
-            setCurrentDomainConfig(domainConfigs[currentDomainId]);
-        }
+        setCurrentDomainConfig(currentDomainId && currentDomainId in domainConfigs ? domainConfigs[currentDomainId] : undefined);
     }, [currentDomainId, domainConfigs]);
 
     return (
@@ -84,6 +89,7 @@ export const StorageContextProvider: React.FC<Props> = ({children}) => {
 
             setPasswordChecksum: setPasswordChecksum,
             setConfigForCurrentDomain: updateCurrentDomainConfig,
+            removeConfigForCurrentDomain: () => updateCurrentDomainConfig(undefined),
             selectDomain: (domainId, domain) => { setCurrentDomainId(domainId); setCurrentDomain(domain); },
 
             getConfigForDomainId: getDomainConfig

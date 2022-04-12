@@ -35,6 +35,7 @@ export const DomainPicker: React.FC = () => {
     const storage = useContext(StorageContext);
     const passwordContext = useContext(PasswordContext);
     const [ selectedDomain, setSelectedDomain ] = useState<string>();
+    const [ showDeleteConfig, setShowDeleteConfig ] = useState<boolean>(false);
 
     useEffect(() => {
         if (context)
@@ -64,7 +65,7 @@ export const DomainPicker: React.FC = () => {
     return (
         <UIGroup title='Domain'>
             <div className={classes.wrapper}>
-                <div>
+                <div onMouseEnter={() => setShowDeleteConfig(true)} onMouseLeave={() => setShowDeleteConfig(false)}>
                     <Select
                         options={toSelectOptions(context?.alternativeDomains)}
                         value={selectedDomain ? toSelectOption(selectedDomain) : undefined}
@@ -72,6 +73,11 @@ export const DomainPicker: React.FC = () => {
                         onChange={selected => { if (selected?.value) context?.setDomain(selected.value); }}
                         className={classes.select}
                     />
+                    {!!storage.currentDomainConfig && storage.removeConfigForCurrentDomain && showDeleteConfig ? (
+                        <div className={classes.deleteButtonWrapper}>
+                            <input type='button' value='Delete configuration' onClick={storage.removeConfigForCurrentDomain}></input>
+                        </div>
+                    ) : (<></>)}
                 </div>
             </div>
         </UIGroup>

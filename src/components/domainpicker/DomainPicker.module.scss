@@ -11,3 +11,15 @@
     width: 300px;
     margin: 0px auto;
 }
+
+.deleteButtonWrapper {
+    margin-top: 10px;
+    text-align: center;
+}
+
+.deleteButtonWrapper > input {
+    width: 180px;
+    margin: 0px;
+    height: 30px;
+    font-size: 110%;
+}
