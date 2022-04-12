@@ -18,6 +18,18 @@ const makeConfig = (passwordSize: number = 16, iteration: number = 1, useSpecial
     };
 };
 
+const objectsAreEqual = (object1: any, object2: any): boolean => {
+    if (Object.keys(object1).length !== Object.keys(object2).length)
+        return false;
+    for (const key in object1) {
+        if (!(key in object2))
+            return false;
+        if (object1[key] !== object2[key])
+            return false;
+    }
+    return true;
+};
+
 export const DerivationOptions: React.FC = () => {
     const storage = useContext(StorageContext);
     const [ maxPasswordSize, setMaxPasswordSize ] = useState<number>(32);
@@ -42,7 +54,7 @@ export const DerivationOptions: React.FC = () => {
 
     useEffect(() => {
         const newConfig = makeConfig(passwordSize, iteration, useSpecialCharacters, allowExtraLongPasswords);
-        setDirty(!storage.currentDomainConfig || JSON.stringify(newConfig) !== JSON.stringify(storage.currentDomainConfig))
+        setDirty(!storage.currentDomainConfig || !objectsAreEqual(storage.currentDomainConfig, newConfig))
     }, [storage, passwordSize, iteration, useSpecialCharacters, allowExtraLongPasswords]);
 
     useEffect(() => {
