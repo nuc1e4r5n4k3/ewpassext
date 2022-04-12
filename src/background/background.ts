@@ -46,8 +46,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'openPopup') {
         try {
             (chrome.action as any).openPopup();
+            sendResponse({type: 'openPopup', result: true});
         } catch (e) {
             console.debug(e);
+            sendResponse({type: 'openPopup', result: false});
         }
     } else if (message.type === 'storePasswordHash') {
         _context.passwordHash = message.passwordHash;
@@ -58,10 +60,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             _context.passwordHash = undefined;
             _context.passwordHashTimer = undefined;
         }, message.passwordHashTtl * 1000);
+        sendResponse({});
     } else if (message.type === 'getPasswordHash') {
         sendResponse({
             type: 'passwordHash',
             passwordHash: _context.passwordHash
         });
+    } else {
+        sendResponse({});
     }
 });
