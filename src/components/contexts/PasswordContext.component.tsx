@@ -19,6 +19,24 @@ const matchesChecksum = (passwordHash?: string, checksum?: string): boolean => {
     return checksum === undefined || passwordHash?.substr(0, 2) === checksum;
 };
 
+const storePasswordHash = (hash: string|undefined, callback?: () => void) => {
+    chrome.runtime.sendMessage({
+        type: 'storePasswordHash',
+        passwordHash: hash,
+        passwordHashTtl: hash ? PASSWORD_TTL : undefined
+    }, () => {
+        if (callback) callback();
+    });
+};
+
+const loadPasswordHash = (callback: (hash: string|undefined) => void) => {
+    chrome.runtime.sendMessage({
+        type: 'getPasswordHash'
+    }, (response) => {
+        callback(response.passwordHash);
+    });
+};
+
 type Props = {
     children: any;
 };
@@ -34,24 +52,38 @@ export const PasswordContextProvider: React.FC<Props> = ({children}) => {
 
     useEffect(() => {
         if (isInitial && passwordHash === undefined) {
-            chrome.runtime.sendMessage({
-                type: 'getPasswordHash'
-            }, (response) => {
-                setPasswordHash(response.passwordHash);
+            loadPasswordHash(hash => {
+                setPasswordHash(hash);
                 setInitial(false);
-            });
+            })
         }
     }, [isInitial, passwordHash]);
 
     useEffect(() => {
         if (matchesChecksum(passwordHash, storage.passwordChecksum) || (passwordHash === undefined && !isInitial)) {
-            chrome.runtime.sendMessage({
-                type: 'storePasswordHash',
-                passwordHash: passwordHash,
-                passwordHashTtl: passwordHash ? PASSWORD_TTL : undefined
-            })
+            storePasswordHash(passwordHash);
         }
     }, [isInitial, passwordHash, storage]);
+
+    useEffect(() => {
+        let receivedResponse = true;
+        const timer = setInterval(() => {
+            if (receivedResponse) {
+                console.debug('Sending keepAlive');
+                receivedResponse = false;
+                chrome.runtime.sendMessage({type: 'keepAlive'}, (response) => {
+                    console.debug('Received keepAlive from service worker:', response);
+                    receivedResponse = !passwordHash || response.cacheState;
+                });
+            } else if (passwordHash) {
+                console.debug('No service worker keepAlive received, trying store password hash again');
+                storePasswordHash(passwordHash, () => {
+                    receivedResponse = true;
+                });
+            }
+        }, 2000);
+        return () => clearInterval(timer);
+    })
 
     return (
         <PasswordContext.Provider value={{

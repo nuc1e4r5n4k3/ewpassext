@@ -68,6 +68,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             type: 'passwordHash',
             passwordHash: _context.passwordHash
         });
+    } else if (message.type === 'keepAlive') {
+        sendResponse({
+            type: 'keepAlive',
+            cacheState: _context.passwordHash !== undefined
+        });
     } else {
         sendResponse({});
     }
