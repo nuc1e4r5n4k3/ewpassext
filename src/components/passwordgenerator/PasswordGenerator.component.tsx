@@ -27,8 +27,7 @@ export const PasswordGenerator: React.FC = () => {
         const password = derivePassword();
         if (!password) return;
 
-        navigator.clipboard.writeText(password);
-        window.close();
+        navigator.clipboard.writeText(password).then(() => window.close());
     };
 
     const injectPassword = () => {
