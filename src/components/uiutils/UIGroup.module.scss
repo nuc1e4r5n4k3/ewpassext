@@ -1,13 +1,15 @@
 .UIGroup {
+    display: inline-block;
     text-align: center;
     background-color: lightgray;
     border-radius: 40px;
-    padding: 15px;
-    margin: 15px;
+    width: 368px;
+    padding: 8px;
+    margin: 8px 8px 0px 8px;
 }
 
 .heading {
     font-weight: bold;
     font-size: 150%;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }

@@ -2,7 +2,7 @@
     display: inline;
 }
 
-.wrapper div {
+.wrapper > div {
     display: inline;
 }
 
@@ -13,13 +13,16 @@
 }
 
 .status {
-    margin-left: 10px;
+    display: inline-block;
     font-size: 150%;
-    vertical-align: middle;
+    height: 24px;
 }
 
 .buttonWrapper {
-    margin: 0px 8px;
+    display: inline-block;
+    height: 24px;
+    vertical-align: middle;
+    margin: 0px 10px;
 }
 
 .clear {

@@ -17,7 +17,7 @@ export const Checksum: React.FC<Props> = ({value, expected, setCurrentChecksum})
         <div className={classes.wrapper}>
             <div className={classes.checksum}>{value}</div>
             {expected !== undefined ? (
-                <div onMouseEnter={() => setShowReset(true)} onMouseLeave={() => setShowReset(false)}>
+                <div className={classes.buttonWrapper} onMouseEnter={() => setShowReset(true)} onMouseLeave={() => setShowReset(false)}>
                     <div className={classes.status}>{value === expected ? CORRECT : INCORRECT}</div>
                     {setCurrentChecksum && showReset ? (<input type='button' value='Clear' onClick={() => setCurrentChecksum()} className={classes.clear}></input>) : (<></>)}
                 </div>

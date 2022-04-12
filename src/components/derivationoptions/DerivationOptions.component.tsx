@@ -60,7 +60,7 @@ export const DerivationOptions: React.FC = () => {
                 <Row>
                     <RowHeader value='Password length:' />
                     <div>
-                        <NumericInput size={2} value={passwordSize} min={10} max={maxPasswordSize} disabled={!storage.currentDomainId} onChange={value => {
+                        <NumericInput size={2} value={passwordSize} min={10} max={maxPasswordSize} disabled={!storage.currentDomainId} className={classes.input} onChange={value => {
                             if (value !== null && value >= 10 && value <= maxPasswordSize)
                                 setPasswordSize(value);
                         }}/>
@@ -69,7 +69,7 @@ export const DerivationOptions: React.FC = () => {
                 <Row>
                     <RowHeader value='Iteration:' />
                     <div>
-                        <NumericInput size={2} value={iteration} min={1} max={100} disabled={!storage.currentDomainId} onChange={value => {
+                        <NumericInput size={2} value={iteration} min={1} max={100} disabled={!storage.currentDomainId} className={classes.input} onChange={value => {
                             if (value !== null && value >= 1 && value <= 100)
                                 setIteration(value);
                         }}/>
