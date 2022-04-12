@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import Select from 'react-select';
-import sha256 from 'sha256';
+import { getDomainId } from '../../lib/derivation';
 import { PageContext } from '../contexts/PageContext.component';
 import { PasswordContext } from '../contexts/PasswordContext.component';
 import { StorageContext } from '../contexts/StorageContext.component';
@@ -24,10 +24,6 @@ const toSelectOptions = (values?: string[]): SelectOption[] => {
         }
     }
     return options;
-};
-
-const getDomainId = (passwordHash: string, domain: string): string => {
-    return sha256(passwordHash + '/' + domain).substr(0, 8);
 };
 
 export const DomainPicker: React.FC = () => {

@@ -1,11 +1,6 @@
 import { createContext, useEffect, useState } from 'react';
+import { IDomainConfig, load, store } from '../../lib/storage';
 
-export interface IDomainConfig {
-    passwordLength: number;
-    passwordIteration: number;
-    useSpecialCharacters: boolean;
-    allowExtraLongPasswords: boolean;
-}
 
 type IMetadata = { [key: string]: IDomainConfig };
 
@@ -22,20 +17,6 @@ export interface IStorageContext {
 
     getConfigForDomainId?: (domainId: string) => IDomainConfig|undefined;
 }
-
-
-const load = (name: string) => {
-    const value = localStorage.getItem(name);
-    return value === null ? undefined : JSON.parse(value);
-};
-
-const store = (name: string, value: any) => {
-    if (value === undefined) {
-        localStorage.removeItem(name);
-    } else {
-        localStorage.setItem(name, JSON.stringify(value));
-    }
-};
 
 const loadAll = (): IStorageContext => {
     return {

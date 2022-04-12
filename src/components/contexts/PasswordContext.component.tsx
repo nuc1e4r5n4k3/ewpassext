@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import sha256 from 'sha256';
-import { SEED_PREFIX } from '../../lib/derivation';
+import { hashPassword } from '../../lib/derivation';
 import { StorageContext } from './StorageContext.component';
 
 
@@ -46,8 +45,7 @@ export const PasswordContextProvider: React.FC<Props> = ({children}) => {
     const [ isInitial, setInitial ] = useState<boolean>(true);
 
     const setPassword = (password: string) => {
-        const hash = sha256(SEED_PREFIX + password);
-        setPasswordHash(hash);
+        setPasswordHash(hashPassword(password));
     };
 
     useEffect(() => {

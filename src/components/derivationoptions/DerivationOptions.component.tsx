@@ -5,7 +5,8 @@ import NumericInput from 'react-numeric-input';
 import classes from './DerivationOptions.module.scss';
 import { getMaxPasswordSize } from '../../lib/derivation';
 import { UIGroup } from '../uiutils/UIGroup.component';
-import { IDomainConfig, StorageContext } from '../contexts/StorageContext.component';
+import { StorageContext } from '../contexts/StorageContext.component';
+import { IDomainConfig } from '../../lib/storage';
 
 
 const makeConfig = (passwordSize: number = 16, iteration: number = 1, useSpecialCharacters: boolean = true, allowExtraLongPasswords: boolean = false): IDomainConfig => {

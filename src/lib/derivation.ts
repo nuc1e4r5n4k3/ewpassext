@@ -24,6 +24,13 @@ const calcRounds = (map: string, extraLong: boolean): number => {
     return n;
 };
 
+export const hashPassword = (password: string): string =>
+    sha256(SEED_PREFIX + password);
+
+export const getDomainId = (passwordHash: string, domain: string): string => {
+    return sha256(passwordHash + '/' + domain).substr(0, 8);
+};
+
 export const getMaxPasswordSize = (withSpecialChars: boolean = true, extraLong: boolean = false): number => 
     ENTROPY_SIZE * calcRounds(withSpecialChars ? EXTENDED_MAP : BASIC_MAP, extraLong);
 
