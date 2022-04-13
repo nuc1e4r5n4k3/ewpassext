@@ -98,7 +98,7 @@ export const importLegacyBackup = (config: LegacyBackup, password: string, clear
             passwordLength: legacyConfig[0],
             passwordIteration: legacyConfig[1],
             useSpecialCharacters: legacyConfig[2],
-            allowExtraLongPasswords: legacyConfig[3] || true
+            allowExtraLongPasswords: legacyConfig[3] !== undefined ? legacyConfig[3] : true
         };
         configs[domainId] = domainConfig;
     }
