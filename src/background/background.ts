@@ -4,6 +4,16 @@ type Context = {
     passwordHashTimer?: NodeJS.Timeout;
 };
 
+type InjectionContext = {
+    hookedInputs: HTMLInputElement[];
+    injectionTimer?: NodeJS.Timeout,
+    lastPopupTime: number;
+};
+
+type InjectionContextHolder = {
+    ewpassext?: InjectionContext;
+}
+
 let _context: Context = {};
 
 chrome.webNavigation.onCompleted.addListener(e => {
@@ -13,9 +23,22 @@ chrome.webNavigation.onCompleted.addListener(e => {
 
     const hookPasswordInputFocusHandlers = () => {
         const EXTENSION_ID = 'plnponcbnkhnjaopjjgagpkameffpllm';
+        let contextHolder = window as InjectionContextHolder;
+        let ctx: InjectionContext = contextHolder.ewpassext || {
+            hookedInputs: [],
+            lastPopupTime: 0
+        };
+        contextHolder.ewpassext = ctx;
 
-        const getPasswordInputs = () => 
+        const getPasswordInputs = (document: Document) =>
             Array.from(document.getElementsByTagName('input')).filter(element => element.type === 'password');
+
+        const getIFrameDocuments = (document: Document) =>
+            Array.from(document.getElementsByTagName('iframe'), iframe => iframe.contentDocument)
+                 .filter(document => document) as Document[];
+
+        const getAllPasswordInputs = () =>
+            Array.from([document].concat(getIFrameDocuments(document)), document => getPasswordInputs(document)).reduce((all, part) => all.concat(part));
 
         const hookFocusHandler = (input: HTMLInputElement, hook: (event: FocusEvent) => void) => {
             const oldHandler = input.onfocus;
@@ -30,9 +53,35 @@ chrome.webNavigation.onCompleted.addListener(e => {
             chrome.runtime.sendMessage(EXTENSION_ID, {type: 'openPopup'});
         };
 
-        for (const input of getPasswordInputs()) {
-            hookFocusHandler(input, doOpenPopup);
-        }
+        const injectHooks = () => {
+            for (const input of getAllPasswordInputs()) {
+                if (ctx.hookedInputs.includes(input))
+                    continue;
+                hookFocusHandler(input, () => {
+                    const now = new Date().getTime();
+                    const last = ctx.lastPopupTime || 0;
+                    if (input.value === '' && now - last > 3000) {
+                        ctx.lastPopupTime = now;
+                        doOpenPopup();
+                    }
+                });
+                ctx.hookedInputs.push(input);
+                console.debug(`ewpassext: Hooked password input ${input.id}`, input);
+            }
+        };
+
+        const triggerInjection = () => {
+            if (ctx.injectionTimer)
+                clearTimeout(ctx.injectionTimer);
+
+            ctx.injectionTimer = setTimeout(injectHooks, 100);
+        };
+        
+        triggerInjection();
+        new MutationObserver(triggerInjection).observe(document, {
+            subtree: true,
+            childList: true
+        });
     };
 
     chrome.scripting.executeScript({
