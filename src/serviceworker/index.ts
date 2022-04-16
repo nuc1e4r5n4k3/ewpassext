@@ -16,7 +16,7 @@ chrome.webNavigation.onCompleted.addListener(e => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => handleRequest(message, sendResponse));
 
 addRequestHandler<GetPasswordHashRequest, GetPasswordHashResponse>('getPasswordHash', handleGetPasswordHash);
-addRequestHandler<StorePasswordHashRequest, StorePasswordHashResponse>('getPasswordHash', handleStorePasswordHash);
+addRequestHandler<StorePasswordHashRequest, StorePasswordHashResponse>('storePasswordHash', handleStorePasswordHash);
 
 addRequestHandler<KeepAliveRequest, KeepAliveResponse>('keepAlive', () => ({
     type: 'keepAlive',
