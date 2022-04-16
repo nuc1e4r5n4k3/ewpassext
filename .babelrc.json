@@ -1,0 +1,14 @@
+{
+    "presets": [
+        "@babel/preset-typescript",
+        [
+            "@babel/preset-env",
+            {
+                "useBuiltIns": "entry",
+                "corejs": 3,
+                "targets": ">0.2%, not dead"
+            }
+        ]
+    ],
+    "sourceRoot": "src/serviceworker/index.ts"
+}

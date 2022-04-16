@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { getPasswordHash, sendKeepAlive, storePasswordHash as doStorePasswordHash } from '../../internalapi/requests';
 import { hashPassword } from '../../lib/derivation';
 import { StorageContext } from './StorageContext.component';
 
@@ -18,23 +19,8 @@ const matchesChecksum = (passwordHash?: string, checksum?: string): boolean => {
     return checksum === undefined || passwordHash?.substr(0, 2) === checksum;
 };
 
-const storePasswordHash = (hash: string|undefined, callback?: () => void) => {
-    chrome.runtime.sendMessage({
-        type: 'storePasswordHash',
-        passwordHash: hash,
-        passwordHashTtl: hash ? PASSWORD_TTL : undefined
-    }, () => {
-        if (callback) callback();
-    });
-};
-
-const loadPasswordHash = (callback: (hash: string|undefined) => void) => {
-    chrome.runtime.sendMessage({
-        type: 'getPasswordHash'
-    }, (response) => {
-        callback(response.passwordHash);
-    });
-};
+const storePasswordHash = async (passwordHash: string|undefined) =>
+    await doStorePasswordHash(passwordHash, passwordHash ? PASSWORD_TTL : undefined);
 
 type Props = {
     children: any;
@@ -50,10 +36,10 @@ export const PasswordContextProvider: React.FC<Props> = ({children}) => {
 
     useEffect(() => {
         if (isInitial && passwordHash === undefined) {
-            loadPasswordHash(hash => {
-                setPasswordHash(hash);
+            getPasswordHash().then(response => {
+                setPasswordHash(response.passwordHash);
                 setInitial(false);
-            })
+            });
         }
     }, [isInitial, passwordHash]);
 
@@ -65,16 +51,14 @@ export const PasswordContextProvider: React.FC<Props> = ({children}) => {
 
     useEffect(() => {
         let receivedResponse = true;
-        const timer = setInterval(() => {
+        const timer = setInterval(async () => {
             if (receivedResponse) {
                 receivedResponse = false;
-                chrome.runtime.sendMessage({type: 'keepAlive'}, (response) => {
-                    receivedResponse = !passwordHash || response.cacheState;
-                });
+                const response = await sendKeepAlive();
+                receivedResponse = !passwordHash || response.cacheState;
             } else if (passwordHash) {
-                storePasswordHash(passwordHash, () => {
-                    receivedResponse = true;
-                });
+                await storePasswordHash(passwordHash);
+                receivedResponse = true;
             }
         }, 2000);
         return () => clearInterval(timer);

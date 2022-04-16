@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { derivePassword as doDerivePassword } from '../../lib/derivation';
+import { InjectionContextHolder } from '../../scriptinjections/context';
 import { PageContext } from '../contexts/PageContext.component';
 import { PasswordContext } from '../contexts/PasswordContext.component';
 import { StorageContext } from '../contexts/StorageContext.component';
@@ -30,29 +31,17 @@ export const PasswordGenerator: React.FC = () => {
         navigator.clipboard.writeText(password).then(() => window.close());
     };
 
-    const injectPassword = () => {
+    const injectPassword = async () => {
         const password = derivePassword();
         if (!password || !context) return;
 
-        chrome.scripting.executeScript({
+        await chrome.scripting.executeScript({
             target: {tabId: context.tabId},
-            func: password => {
-                const getInputElements = (document: Document) =>
-                    Array.from(document.getElementsByTagName('input')).filter(input => input.type === 'password');
-
-                const injectPassword = (inputs: HTMLInputElement[]) => {
-                    for (let idx = 0; idx < inputs.length; idx++) {
-                        inputs[idx].value = password;
-                    }
-                };
-
-                injectPassword(getInputElements(document));
-
-                for (const iframe of Array.from(document.getElementsByTagName('iframe'))) {
-                    if (iframe.contentDocument)
-                        injectPassword(getInputElements(iframe.contentDocument));
-                }
-            },
+            files: ['scriptinjections/injectpassword.js']
+        });
+        await chrome.scripting.executeScript({
+            target: {tabId: context.tabId},
+            func: password => (window as InjectionContextHolder).ewpassext!.injectPassword!(password),
             args: [password]
         });
         window.close();
