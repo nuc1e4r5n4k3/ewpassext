@@ -1,7 +1,7 @@
 import { GetPasswordHashRequest, GetPasswordHashResponse, KeepAliveRequest, KeepAliveResponse, OpenPopupRequest, OpenPopupResponse, Request, Response, StorePasswordHashRequest, StorePasswordHashResponse } from './types';
 
 
-const EXTENSION_ID = 'plnponcbnkhnjaopjjgagpkameffpllm';
+export const EXTENSION_ID = 'plnponcbnkhnjaopjjgagpkameffpllm';
 
 
 const sendRequest = <RequestT extends Request, ResponseT extends Response> (request: RequestT): Promise<ResponseT> => new Promise(resolve =>

@@ -13,10 +13,12 @@ chrome.webNavigation.onCompleted.addListener(e => {
     });
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => handleRequest(message, sendResponse));
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) =>
+    handleRequest(message, sendResponse, sender)
+);
 
-addRequestHandler<GetPasswordHashRequest, GetPasswordHashResponse>('getPasswordHash', handleGetPasswordHash);
-addRequestHandler<StorePasswordHashRequest, StorePasswordHashResponse>('storePasswordHash', handleStorePasswordHash);
+addRequestHandler<GetPasswordHashRequest, GetPasswordHashResponse>('getPasswordHash', handleGetPasswordHash, true);
+addRequestHandler<StorePasswordHashRequest, StorePasswordHashResponse>('storePasswordHash', handleStorePasswordHash, true);
 
 addRequestHandler<KeepAliveRequest, KeepAliveResponse>('keepAlive', () => ({
     type: 'keepAlive',
