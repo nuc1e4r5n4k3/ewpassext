@@ -8,8 +8,10 @@ export interface Message {
 export interface Request extends Message {};
 export interface Response extends Message {};
 
+export type KeepAliveSource = 'popup'|'keepAliveTab';
 export interface KeepAliveRequest extends Request {
     type: 'keepAlive';
+    from: KeepAliveSource;
 };
 
 export interface KeepAliveResponse extends Response {
@@ -41,5 +43,5 @@ export interface GetPasswordHashRequest extends Request {
 
 export interface GetPasswordHashResponse extends Response {
     type: 'getPasswordHash';
-    passwordHash: string|undefined;
+    passwordHash: string|null|undefined;
 };

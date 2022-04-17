@@ -27,7 +27,7 @@
     },
     "scripts": {
         "start": "react-scripts start",
-        "build": "react-scripts build && webpack -c webpack.serviceworker-config.js && webpack -c webpack.injectpassword-config.js && webpack -c webpack.popuphook-config.js",
+        "build": "react-scripts build && webpack -c webpack.serviceworker-config.js && webpack -c webpack.keepalivetab-config.js && webpack -c webpack.injectpassword-config.js && webpack -c webpack.popuphook-config.js",
         "test": "react-scripts test",
         "eject": "react-scripts eject"
     },

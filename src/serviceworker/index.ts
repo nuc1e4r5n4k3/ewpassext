@@ -1,6 +1,6 @@
 import { addRequestHandler, handleRequest } from '../internalapi/handler';
 import { GetPasswordHashRequest, GetPasswordHashResponse, KeepAliveRequest, KeepAliveResponse, OpenPopupRequest, OpenPopupResponse, StorePasswordHashRequest, StorePasswordHashResponse } from '../internalapi/types';
-import { handleGetPasswordHash, handleStorePasswordHash, isPasswordHashCached } from './storage';
+import { handleGetPasswordHash, handleKeepAlive, handleStorePasswordHash, isPasswordHashCached } from './storage';
 
 
 chrome.webNavigation.onCompleted.addListener(e => {
@@ -19,11 +19,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) =>
 
 addRequestHandler<GetPasswordHashRequest, GetPasswordHashResponse>('getPasswordHash', handleGetPasswordHash, true);
 addRequestHandler<StorePasswordHashRequest, StorePasswordHashResponse>('storePasswordHash', handleStorePasswordHash, true);
-
-addRequestHandler<KeepAliveRequest, KeepAliveResponse>('keepAlive', () => ({
-    type: 'keepAlive',
-    cacheState: isPasswordHashCached()
-}));
+addRequestHandler<KeepAliveRequest, KeepAliveResponse>('keepAlive', handleKeepAlive);
 
 addRequestHandler<OpenPopupRequest, OpenPopupResponse>('openPopup', () => {
     (chrome.action as any).openPopup();

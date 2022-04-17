@@ -37,7 +37,7 @@ export const PasswordContextProvider: React.FC<Props> = ({children}) => {
     useEffect(() => {
         if (isInitial && passwordHash === undefined) {
             getPasswordHash().then(response => {
-                setPasswordHash(response.passwordHash);
+                setPasswordHash(response.passwordHash || undefined);
                 setInitial(false);
             });
         }

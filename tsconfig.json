@@ -25,6 +25,8 @@
         "react-app-env.d.ts"
     ],
     "exclude": [
+        "src/keepalivetab",
+        "src/scriptinjections",
         "src/serviceworker"
     ]
 }

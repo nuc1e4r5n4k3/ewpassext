@@ -1,21 +1,56 @@
-import { GetPasswordHashRequest, GetPasswordHashResponse, StorePasswordHashRequest, StorePasswordHashResponse } from '../internalapi/types';
+import { EXTENSION_URL } from '../internalapi/requests';
+import { GetPasswordHashRequest, GetPasswordHashResponse, KeepAliveRequest, KeepAliveResponse, StorePasswordHashRequest, StorePasswordHashResponse } from '../internalapi/types';
 import { getServiceWorkerContext } from './context';
 
+
+const openKeepAliveTab = () => {
+    chrome.tabs.create({
+        url: EXTENSION_URL + '/keepalivetab.html',
+        active: false,
+        pinned: true
+    });
+    getServiceWorkerContext().lastTabKeepAlive = new Date().getTime();
+};
 
 export const isPasswordHashCached = () =>
     !!getServiceWorkerContext().passwordHash;
 
+const isKeepAliveTabActive = () => {
+    let ctx = getServiceWorkerContext();
+    return ctx.lastTabKeepAlive && new Date().getTime() - ctx.lastTabKeepAlive < 5000;
+}
+
+export const handleKeepAlive = (request: KeepAliveRequest): KeepAliveResponse => {
+    const ctx = getServiceWorkerContext();
+    const currentlyCached = !!ctx.passwordHash;
+
+    if (request.from === 'keepAliveTab')
+        ctx.lastTabKeepAlive = new Date().getTime();
+    else if (currentlyCached && !isKeepAliveTabActive())
+        openKeepAliveTab();
+
+    return {
+        type: 'keepAlive',
+        cacheState: currentlyCached
+    };
+};
+
 export const handleStorePasswordHash = (request: StorePasswordHashRequest): StorePasswordHashResponse => {
     let ctx = getServiceWorkerContext();
-    ctx.passwordHash = request.passwordHash;
+    const newPasswordHash = request.passwordHash ? request.passwordHash : null;
+    
+    if (!ctx.passwordHash && newPasswordHash && !isKeepAliveTabActive())
+        openKeepAliveTab();
+
+    ctx.passwordHash = newPasswordHash;
 
     if (ctx.passwordHashTimer !== undefined) {
         clearTimeout(ctx.passwordHashTimer);
     }
 
-    if (ctx.passwordHash !== undefined && request.passwordHashTtl) {
+    if (ctx.passwordHash && request.passwordHashTtl) {
         ctx.passwordHashTimer = setTimeout(() => {
-            ctx.passwordHash = undefined;
+            ctx.passwordHash = null;
             ctx.passwordHashTimer = undefined;
         }, request.passwordHashTtl * 1000);
     }

@@ -1,7 +1,8 @@
 
 export type ServiceWorkerContext = {
-    passwordHash?: string;
+    passwordHash?: string|null;
     passwordHashTimer?: NodeJS.Timeout;
+    lastTabKeepAlive?: number;
 };
 
 let serviceWorkerContext: ServiceWorkerContext = {};

@@ -1,9 +1,9 @@
-module.exports = (sourceDir, target) => ({
-    entry: [sourceDir],
+module.exports = (project) => ({
+    entry: ['./src/' + project],
     mode: 'production',
     output: {
         path: __dirname,
-        filename: target
+        filename: './build/' + project + '.js'
     },
     resolve: {
         extensions: ['.js', '.ts']
