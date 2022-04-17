@@ -15,8 +15,22 @@ const tryOpenPopup = (input: HTMLInputElement) => {
     }
 };
 
-const triggerInjection = () => {
+const triggerInjection = (_?: MutationRecord[], mutationObserver?: MutationObserver) => {
     let ctx = getInjectionContext();
+
+    /* 
+     *  Since we ignore the actual observer data and instead directly
+     *  check the DOM, it is safe and even preferred to completely
+     *  flush the mutation event queue.
+     */
+    mutationObserver?.takeRecords();
+    ctx.pageChanges++;
+
+    if (ctx.pageChanges >= 100 && mutationObserver) {
+        console.debug('Excessive page changes detected, stopped hooking new input fields');
+        mutationObserver.disconnect();
+        return;
+    }
 
     if (ctx.injectionTimer)
         clearTimeout(ctx.injectionTimer);
@@ -25,7 +39,6 @@ const triggerInjection = () => {
         hookNewElements('onfocus', tryOpenPopup, new DocumentSearcher().getPasswordInputsInDocumentAndIFrames(), ctx.hookedInputs),
     100);
 };
-
 
 new MutationObserver(triggerInjection).observe(document, {
     subtree: true,
