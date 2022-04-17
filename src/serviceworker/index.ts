@@ -1,10 +1,10 @@
 import { addRequestHandler, handleRequest } from '../internalapi/handler';
 import { GetPasswordHashRequest, GetPasswordHashResponse, KeepAliveRequest, KeepAliveResponse, OpenPopupRequest, OpenPopupResponse, StorePasswordHashRequest, StorePasswordHashResponse } from '../internalapi/types';
-import { handleGetPasswordHash, handleKeepAlive, handleStorePasswordHash, isPasswordHashCached } from './storage';
+import { handleGetPasswordHash, handleKeepAlive, handleStorePasswordHash } from './storage';
 
 
 chrome.webNavigation.onCompleted.addListener(e => {
-    if (e.url.substr(0, 8) !== 'https://') {
+    if (e.url.substr(0, 8) !== 'https://' || e.frameId) {
         return;
     }
     chrome.scripting.executeScript({
