@@ -34,11 +34,14 @@ export const DomainPicker: React.FC = () => {
     const [ showDeleteConfig, setShowDeleteConfig ] = useState<boolean>(false);
 
     useEffect(() => {
-        if (context)
-            setSelectedDomain(context.domain);
+        if (context?.prefferedDomain)
+            setSelectedDomain(context.prefferedDomain);
     }, [context]);
 
     useEffect(() => {
+        if (selectedDomain) {
+            return;     /* Only initialize, don't override */
+        }
         if (!passwordContext?.hash || !passwordContext?.correct || !context?.alternativeDomains || !storage.getConfigForDomainId) {
             return;
         }
@@ -51,7 +54,7 @@ export const DomainPicker: React.FC = () => {
                 break;
             }
         }
-    }, [storage, passwordContext, context?.alternativeDomains])
+    }, [selectedDomain, storage, passwordContext, context?.alternativeDomains])
 
     useEffect(() => {
         if (passwordContext?.hash && selectedDomain && storage.selectDomain)
@@ -66,7 +69,7 @@ export const DomainPicker: React.FC = () => {
                         options={toSelectOptions(context?.alternativeDomains)}
                         value={selectedDomain ? toSelectOption(selectedDomain) : undefined}
                         isDisabled={!!storage.currentDomainConfig}
-                        onChange={selected => { if (selected?.value) context?.setDomain(selected.value); }}
+                        onChange={selected => { if (selected?.value) setSelectedDomain(selected.value); }}
                         className={classes.select}
                     />
                     {!!storage.currentDomainConfig && storage.removeConfigForCurrentDomain && showDeleteConfig ? (
