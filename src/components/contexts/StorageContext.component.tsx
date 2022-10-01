@@ -9,11 +9,12 @@ export interface IStorageContext {
     currentDomain?: string;
     currentDomainId?: string;
     currentDomainConfig?: IDomainConfig;
+    currentDomainIsForPage?: boolean;
 
     setPasswordChecksum?: (checksum?: string) => void;
     setConfigForCurrentDomain?: (config: IDomainConfig) => void;
     removeConfigForCurrentDomain?: () => void;
-    selectDomain?: (domainId: string, domain: string) => void;
+    selectDomain?: (domainId: string, domain: string, forCurrentPage?: boolean) => void;
 
     getConfigForDomainId?: (domainId: string) => IDomainConfig|undefined;
 }
@@ -35,6 +36,7 @@ export const StorageContextProvider: React.FC<Props> = ({children}) => {
     const [ currentDomain, setCurrentDomain ] = useState<string|undefined>(undefined);
     const [ currentDomainId, setCurrentDomainId ] = useState<string|undefined>(undefined);
     const [ currentDomainConfig, setCurrentDomainConfig ] = useState<IDomainConfig|undefined>(undefined);
+    const [ isForCurrentPage, setForCurrentPage ] = useState<boolean>(true);
 
     const getDomainConfig = (domainId: string): IDomainConfig|undefined => 
         domainId in domainConfigs ? domainConfigs[domainId] : undefined;
@@ -67,11 +69,12 @@ export const StorageContextProvider: React.FC<Props> = ({children}) => {
             currentDomain: currentDomain,
             currentDomainId: currentDomainId,
             currentDomainConfig: currentDomainConfig,
+            currentDomainIsForPage: isForCurrentPage,
 
             setPasswordChecksum: setPasswordChecksum,
             setConfigForCurrentDomain: updateCurrentDomainConfig,
             removeConfigForCurrentDomain: () => updateCurrentDomainConfig(undefined),
-            selectDomain: (domainId, domain) => { setCurrentDomainId(domainId); setCurrentDomain(domain); },
+            selectDomain: (domainId, domain, forCurrentPage) => { setCurrentDomainId(domainId); setCurrentDomain(domain); setForCurrentPage(forCurrentPage !== false); },
 
             getConfigForDomainId: getDomainConfig
         }}>

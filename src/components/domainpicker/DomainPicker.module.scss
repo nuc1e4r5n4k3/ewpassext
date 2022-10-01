@@ -7,19 +7,86 @@
     text-align: left;
 }
 
-.select {
+.selectorLine {
+    display: flex;
+    flex-direction: row;
     width: 70%;
     margin: 0px auto;
 }
 
-.deleteButtonWrapper {
-    margin-top: 10px;
+.select {
+    width: 100%;
+}
+
+.openButton {
+    margin: 3px;
+    width: auto;
+    height: auto;
+    font-size: 110%;
+    font-weight: bold;
     text-align: center;
 }
 
-.deleteButtonWrapper > input {
-    width: 180px;
-    margin: 0px;
+.domainInputLabel {
+    display: flex;
+    margin-top: 10px;
+    margin-right: 5px;
+}
+
+.domainInputLabel > p {
+    display: block;
+    margin: auto;
+    font-weight: bold;
+}
+
+.domainInput {
+    margin-top: 10px;
+    border-radius: 6px;
+    width: 100%;
+    height: 20px;
+    padding-left: 10px;
+}
+
+.domainInput[state=match] {
+    background-color: rgb(144, 255, 144);
+    border-color: rgb(0, 128, 0);
+}
+
+.domainInput[state=nomatch] {
+    background-color: rgb(255, 144, 144);
+    border-color: rgb(128, 0, 0);
+}
+
+.domainInputStatusIcon {
+    margin-top: 10px;
+    margin-left: -30px;
+    margin-right: 10px;
+    width: 30px;
+    height: 100%;
+    font-size: 130%;
+    font-weight: bold;
+    text-align: center;
+    vertical-align: middle;
+    pointer-events: none;
+}
+
+.domainInputStatusIcon[state=match] {
+    color: rgb(0, 128, 0);
+}
+
+.domainInputStatusIcon[state=nomatch] {
+    color: rgb(128, 0, 0);
+}
+
+.deleteButtonWrapper {
+    margin: 10px 0px 0px 0px;
     height: 30px;
+    text-align: center;
+}
+
+.deleteButtonWrapper > input[type=button] {
+    margin: 0px;
+    width: 180px;
+    height: 100%;
     font-size: 110%;
 }
