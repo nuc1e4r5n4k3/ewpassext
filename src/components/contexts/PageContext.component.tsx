@@ -59,7 +59,14 @@ export const PageContextProvider: React.FC<Props> = ({children}) => {
     }, [fullDomain]);
 
     useEffect(() => {
-        setPrefferedDomain(alternativeDomains.length ? alternativeDomains[0] : undefined);
+        setPrefferedDomain((() => {
+            if (alternativeDomains.length === 0)
+                return undefined;
+
+            if (!alternativeDomains[0].startsWith('www.'))
+                return alternativeDomains[0];
+            return alternativeDomains[1];
+        })());
     }, [alternativeDomains]);
 
     return (
