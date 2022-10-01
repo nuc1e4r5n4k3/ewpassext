@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { derivePassword as doDerivePassword } from '../../lib/derivation';
 import { InjectionContextHolder } from '../../scriptinjections/context';
 import { PageContext } from '../contexts/PageContext.component';
@@ -12,6 +12,9 @@ export const PasswordGenerator: React.FC = () => {
     const storage = useContext(StorageContext);
     const passwordContext = useContext(PasswordContext);
     const context = useContext(PageContext);
+    const [ allowInjection, setAllowInjection ] = useState<boolean>(true);
+    const copyButton = useRef<HTMLInputElement>(null);
+    const injectButton = useRef<HTMLInputElement>(null);
 
     const derivePassword = (): string|undefined => {
         const hash = passwordContext?.hash;
@@ -47,14 +50,27 @@ export const PasswordGenerator: React.FC = () => {
         window.close();
     };
 
+    useEffect(() => {
+        setAllowInjection(storage.currentDomainIsForPage !== false);
+    }, [storage.currentDomainIsForPage]);
+
+    useEffect(() => {
+        if (allowInjection)
+            injectButton.current?.focus();
+        else
+            copyButton.current?.focus();
+    }, [allowInjection])
+
     return storage.currentDomainConfig ? (
         <UIGroup title='Password generator'>
             <div>
-                <input type='button' value='Copy to clipboard' disabled={!passwordContext?.hash} onClick={copyPasswordToClipboard} className={classes.button}></input>
+                <input ref={copyButton} type='button' value='Copy to clipboard' disabled={!passwordContext?.hash} autoFocus={!allowInjection} onClick={copyPasswordToClipboard} className={classes.button}></input>
             </div>
-            <div>
-                <input type='button' value='Inject automatically' disabled={!passwordContext?.hash} autoFocus={true} onClick={injectPassword} className={classes.button}></input>
-            </div>
+            { allowInjection ? (
+                <div>
+                    <input ref={injectButton} type='button' value='Inject automatically' disabled={!passwordContext?.hash} autoFocus={true} onClick={injectPassword} className={classes.button}></input>
+                </div>
+            ) : (<></>)}
         </UIGroup>
     ) : (<></>);
 };
