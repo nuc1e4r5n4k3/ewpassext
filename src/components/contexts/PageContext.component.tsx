@@ -42,11 +42,14 @@ export const PageContextProvider: React.FC<Props> = ({children}) => {
     const [ preferredDomain, setPreferredDomain ] = useState<string>();
 
     useEffect(() => {
-        (async () => {
+        const updateContextInfo = async () => {
             const {id, url} = await currentTab();
             setTabId(id);
             setFullDomain(parseDomainFromUrl(url!));
-        })();
+        };
+
+        chrome.webNavigation.onCommitted.addListener(() => updateContextInfo());
+        updateContextInfo();
     });
 
     useEffect(() => {
