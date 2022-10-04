@@ -26,7 +26,7 @@ const currentTab = (): Promise<chrome.tabs.Tab> => new Promise((resolve, reject)
 
 export interface IPageContext {
     tabId: number;
-    prefferedDomain: string;
+    preferredDomain: string;
     alternativeDomains: string[];
 }
 
@@ -39,7 +39,7 @@ export const PageContextProvider: React.FC<Props> = ({children}) => {
     const [ tabId, setTabId ] = useState<number>();
     const [ fullDomain, setFullDomain ] = useState<string>();
     const [ alternativeDomains, setAlternativeDomains ] = useState<string[]>([]);
-    const [ prefferedDomain, setPrefferedDomain ] = useState<string>();
+    const [ preferredDomain, setPreferredDomain ] = useState<string>();
 
     useEffect(() => {
         (async () => {
@@ -59,7 +59,7 @@ export const PageContextProvider: React.FC<Props> = ({children}) => {
     }, [fullDomain]);
 
     useEffect(() => {
-        setPrefferedDomain((() => {
+        setPreferredDomain((() => {
             if (alternativeDomains.length === 0)
                 return undefined;
 
@@ -72,7 +72,7 @@ export const PageContextProvider: React.FC<Props> = ({children}) => {
     return (
         <PageContext.Provider value={tabId && fullDomain ? {
             tabId: tabId,
-            prefferedDomain: prefferedDomain || fullDomain,
+            preferredDomain: preferredDomain || fullDomain,
             alternativeDomains: alternativeDomains
         } : undefined}>
             {children}

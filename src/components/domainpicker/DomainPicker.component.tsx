@@ -51,8 +51,8 @@ export const DomainPicker: React.FC = () => {
     const [ isPageDomain, setPageDomain ] = useState<boolean>(true);
 
     useEffect(() => {
-        if (context?.prefferedDomain)
-            setSelectedDomain(context.prefferedDomain);
+        if (context?.preferredDomain)
+            setSelectedDomain(context.preferredDomain);
     }, [context]);
 
     useEffect(() => {
