@@ -1,6 +1,7 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import Select from 'react-select';
-import { getDomainId } from '../../lib/derivation';
+import { getDomainId as deriveDomainId } from '../../lib/derivation';
+import { IDomainConfig } from '../../lib/storage';
 import { PageContext } from '../contexts/PageContext.component';
 import { PasswordContext } from '../contexts/PasswordContext.component';
 import { StorageContext } from '../contexts/StorageContext.component';
@@ -15,6 +16,12 @@ interface SelectOption {
 enum MatchState {
     Match = 'match',
     NoMatch = 'nomatch'
+};
+
+namespace MatchState {
+    export function from(matches: boolean): MatchState {
+        return matches ? MatchState.Match : MatchState.NoMatch;
+    }
 };
 
 const MatchStateIcon: { [key: string]: string } = {
@@ -48,56 +55,106 @@ export const DomainPicker: React.FC = () => {
     const [ showDomainInput, setShowDomainInput ] = useState<boolean>(false);
     const [ enteredDomain, setEnteredDomain ] = useState<string>('');
     const [ matchState, setMatchState ] = useState<MatchState|undefined>(undefined);
-    const [ isPageDomain, setPageDomain ] = useState<boolean>(true);
 
-    useEffect(() => {
-        if (context?.preferredDomain)
-            setSelectedDomain(context.preferredDomain);
-    }, [context]);
+    /**
+     *  Derive domainId from domain and password
+     */
+    const getDomainId = useCallback((domain: string): string | undefined => {
+        if (passwordContext?.hash)
+            return deriveDomainId(passwordContext.hash, domain);
+    }, [passwordContext?.hash]);
 
+    /**
+     *  Loads domain config
+     */
+    const loadConfig = useCallback((domain: string): IDomainConfig | undefined => {
+        if (storage.getConfigForDomainId)
+            return storage.getConfigForDomainId(getDomainId(domain));
+    }, [storage, getDomainId]);
+
+    /**
+     *  Convenience variant of loadConfig()
+     * 
+     *  Defaults to selectedDomain if no domain is provided.
+     */
+    const domainHasConfig = useCallback((domain?: string): boolean => {
+        if (!domain && !selectedDomain)
+            return false;
+        return !!loadConfig(domain || selectedDomain!);
+    }, [selectedDomain, loadConfig]);
+
+    /**
+     *  Same as domainHasConfig(), but returns a MatchState result.
+     */
+    const domainMatchState = useCallback((domain: string): MatchState => MatchState.from(domainHasConfig(domain)), [domainHasConfig]);
+
+    /**
+     *  Check if domain is related to current page.
+     * 
+     *  Defaults to selectedDomain if no domain is provided.
+     */
+    const isPageDomain = useCallback((domain?: string) => {
+        if (!domain && !selectedDomain) /* If nothing selected, we are in the context of the current page (probably loading it) */
+            return true;
+
+        return (context?.alternativeDomains || []).indexOf(selectedDomain || domain!) >= 0;
+    }, [selectedDomain, context?.alternativeDomains]);
+
+    /**
+     *  Auto-clear enteredDomain state when UI is removed.
+     */
     useEffect(() => {
         if (!showDomainInput)
             setEnteredDomain('');
     }, [showDomainInput])
 
+    /**
+     *  Update enteredDomain matchState state (is domain known/has a valid config) when it changes.
+     * 
+     *  Note that matchState is reset to undefined when enteredDomain is reset.
+     */
     useEffect(() => {
-        setMatchState((() => {
-            if (enteredDomain === '' || !passwordContext?.hash || !storage.getConfigForDomainId)
-                return undefined;
+        setMatchState(enteredDomain !== '' ? domainMatchState(enteredDomain) : undefined);
+    }, [enteredDomain, domainMatchState]);
 
-            const knownDomain = !!storage.getConfigForDomainId(getDomainId(passwordContext.hash, enteredDomain));
-            return knownDomain ? MatchState.Match : MatchState.NoMatch;
-        })());
-    }, [storage, passwordContext, enteredDomain]);
-
+    /**
+     *  Load the config for the current page.
+     * 
+     *  This gets triggered when:
+     *   * The page context changes (i.e. navigation)
+     *   * The password is entered/cleared
+     *   * The selected domain changes [side-effect]
+     * 
+     *  Whenever it triggers, it should check if a config can be loaded for any domain for the current page,
+     *  but only if a config is not already loaded (to avoid immediately deselecting a manually selected config).
+     *  If no config is loaded and no config can be loaded either, switched to preferredDomain.
+     */
     useEffect(() => {
-        if (!context?.alternativeDomains || !selectedDomain)
+        if (selectedDomain && domainHasConfig())
             return;
-        setPageDomain(context.alternativeDomains.findIndex(v => v === selectedDomain) >= 0);
-    }, [context?.alternativeDomains, selectedDomain]);
 
+        setSelectedDomain((context?.alternativeDomains || []).find(domain => domainHasConfig(domain)) || context?.preferredDomain);
+    }, [selectedDomain, context?.alternativeDomains, context?.preferredDomain, domainHasConfig, isPageDomain])
+
+    /**
+     *  Helper effect: if preferredDomain changes, force override selectedDomain, unless a non-page domain is selected.
+     */
+    useEffect(() => {
+        if (context?.preferredDomain && !domainHasConfig())
+            setSelectedDomain(context?.preferredDomain);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [context?.preferredDomain]);
+
+    /**
+     *  Forward selected domain to StorageContext if a config is available for it.
+     */
     useEffect(() => {
         if (selectedDomain) {
-            return;     /* Only initialize, don't override */
+            if (storage.selectDomain) storage.selectDomain(getDomainId(selectedDomain), selectedDomain, isPageDomain());
+        } else {
+            if (storage.clearSelection) storage.clearSelection();
         }
-        if (!passwordContext?.hash || !passwordContext?.correct || !context?.alternativeDomains || !storage.getConfigForDomainId) {
-            return;
-        }
-        for (const domain of context.alternativeDomains) {
-            const domainId = getDomainId(passwordContext.hash, domain);
-            const config = storage.getConfigForDomainId(domainId);
-
-            if (config !== undefined) {
-                setSelectedDomain(domain);
-                break;
-            }
-        }
-    }, [selectedDomain, storage, passwordContext, context?.alternativeDomains])
-
-    useEffect(() => {
-        if (passwordContext?.hash && selectedDomain && storage.selectDomain)
-            storage.selectDomain(getDomainId(passwordContext?.hash, selectedDomain), selectedDomain, isPageDomain);
-    }, [storage, passwordContext, selectedDomain, isPageDomain]);
+    }, [selectedDomain, isPageDomain, getDomainId, storage]);
 
     return (
         <UIGroup title='Domain'>
@@ -113,7 +170,7 @@ export const DomainPicker: React.FC = () => {
                         <Select
                             options={toSelectOptions(context?.alternativeDomains, selectedDomain)}
                             value={selectedDomain ? toSelectOption(selectedDomain) : undefined}
-                            isDisabled={!!storage.currentDomainConfig && isPageDomain}
+                            isDisabled={selectedDomain ? domainHasConfig() && isPageDomain() : false}
                             onChange={selected => { if (selected?.value) setSelectedDomain(selected.value); }}
                             className={classes.select}
                         />

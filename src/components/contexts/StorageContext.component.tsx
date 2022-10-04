@@ -14,9 +14,10 @@ export interface IStorageContext {
     setPasswordChecksum?: (checksum?: string) => void;
     setConfigForCurrentDomain?: (config: IDomainConfig) => void;
     removeConfigForCurrentDomain?: () => void;
-    selectDomain?: (domainId: string, domain: string, forCurrentPage?: boolean) => void;
+    selectDomain?: (domainId: string|undefined, domain: string, forCurrentPage: boolean) => void;
+    clearSelection?: () => void;
 
-    getConfigForDomainId?: (domainId: string) => IDomainConfig|undefined;
+    getConfigForDomainId?: (domainId: string|undefined) => IDomainConfig|undefined;
 }
 
 const loadAll = (): IStorageContext => {
@@ -40,6 +41,12 @@ export const StorageContextProvider: React.FC<Props> = ({children}) => {
 
     const getDomainConfig = (domainId: string): IDomainConfig|undefined => 
         domainId in domainConfigs ? domainConfigs[domainId] : undefined;
+
+    const updateState = (domainId: string|undefined, domain?: string, forCurrentPage?: boolean) => {
+        setCurrentDomainId(domainId);
+        setCurrentDomain(domain);
+        setForCurrentPage(forCurrentPage !== false);
+     };
 
     const updateCurrentDomainConfig = (config: IDomainConfig|undefined) => {
         if (!currentDomainId)
@@ -74,9 +81,10 @@ export const StorageContextProvider: React.FC<Props> = ({children}) => {
             setPasswordChecksum: setPasswordChecksum,
             setConfigForCurrentDomain: updateCurrentDomainConfig,
             removeConfigForCurrentDomain: () => updateCurrentDomainConfig(undefined),
-            selectDomain: (domainId, domain, forCurrentPage) => { setCurrentDomainId(domainId); setCurrentDomain(domain); setForCurrentPage(forCurrentPage !== false); },
+            selectDomain: updateState,
+            clearSelection: () => updateState(undefined),
 
-            getConfigForDomainId: getDomainConfig
+            getConfigForDomainId: (domainId: string|undefined) => { if (domainId) return getDomainConfig(domainId); }
         }}>
             {children}
         </StorageContext.Provider>
