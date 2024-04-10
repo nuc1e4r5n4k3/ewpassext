@@ -1,12 +1,13 @@
+import { runtime } from '../lib/browsercompat';
 import { GetPasswordHashRequest, GetPasswordHashResponse, KeepAliveRequest, KeepAliveResponse, KeepAliveSource, OpenPopupRequest, OpenPopupResponse, Request, Response, StorePasswordHashRequest, StorePasswordHashResponse } from './types';
 
 
-export const EXTENSION_ID = 'plnponcbnkhnjaopjjgagpkameffpllm';
-export const EXTENSION_URL = 'chrome-extension://' + EXTENSION_ID;
+export const EXTENSION_ID = chrome !== undefined ? 'plnponcbnkhnjaopjjgagpkameffpllm' : 'a75ac207-c1c3-4ad8-8f4d-7fea28eaacd4';
+export const EXTENSION_URL = (chrome !== undefined ? 'chrome-extension://' : 'moz-extension://') + EXTENSION_ID;
 
 
 const sendRequest = <RequestT extends Request, ResponseT extends Response> (request: RequestT): Promise<ResponseT> => new Promise(resolve =>
-    chrome.runtime.sendMessage(EXTENSION_ID, request, response => {
+    runtime.sendMessage(EXTENSION_ID, request, response => {
         resolve(response);
     }));
 

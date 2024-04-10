@@ -1,10 +1,11 @@
 import { EXTENSION_URL } from '../internalapi/requests';
 import { GetPasswordHashRequest, GetPasswordHashResponse, KeepAliveRequest, KeepAliveResponse, StorePasswordHashRequest, StorePasswordHashResponse } from '../internalapi/types';
 import { getServiceWorkerContext } from './context';
+import { tabs } from '../lib/browsercompat';
 
 
 const openKeepAliveTab = () => {
-    chrome.tabs.create({
+    tabs.create({
         url: EXTENSION_URL + '/keepalivetab.html',
         active: false,
         pinned: true

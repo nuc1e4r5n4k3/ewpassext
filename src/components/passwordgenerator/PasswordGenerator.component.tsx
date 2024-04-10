@@ -6,6 +6,7 @@ import { PasswordContext } from '../contexts/PasswordContext.component';
 import { StorageContext } from '../contexts/StorageContext.component';
 import { UIGroup } from '../uiutils/UIGroup.component';
 import classes from './PasswordGenerator.module.scss';
+import { scripting } from '../../lib/browsercompat';
 
 
 export const PasswordGenerator: React.FC = () => {
@@ -38,11 +39,11 @@ export const PasswordGenerator: React.FC = () => {
         const password = derivePassword();
         if (!password || !context) return;
 
-        await chrome.scripting.executeScript({
+        await scripting.executeScript({
             target: {tabId: context.tabId},
             files: ['scriptinjections/injectpassword.js']
         });
-        await chrome.scripting.executeScript({
+        await scripting.executeScript({
             target: {tabId: context.tabId},
             func: password => (window as InjectionContextHolder).ewpassext!.injectPassword!(password),
             args: [password]

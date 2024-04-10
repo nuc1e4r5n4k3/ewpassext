@@ -1,14 +1,14 @@
 import { createContext, useEffect, useState } from 'react';
 import { getParentDomains, parseDomainFromUrl } from '../../lib/domain';
-
+import browser from '../../lib/browsercompat';
 
 const currentTab = (): Promise<chrome.tabs.Tab> => new Promise((resolve, reject) => {
-    if (chrome.tabs === undefined) {
-        reject('Cannot access chrome.tabs API');
+    if (browser.tabs === undefined) {
+        reject('Cannot access browser.tabs API');
         return;
     }
-    chrome.tabs.query({
-        windowId: chrome.windows.WINDOW_ID_CURRENT,
+    browser.tabs.query({
+        windowId: browser.windows.WINDOW_ID_CURRENT,
         active: true
     }, result => {
         if (result.length !== 1) {
@@ -48,7 +48,7 @@ export const PageContextProvider: React.FC<Props> = ({children}) => {
             setFullDomain(parseDomainFromUrl(url!));
         };
 
-        chrome.webNavigation.onCommitted.addListener(() => updateContextInfo());
+        browser.webNavigation.onCommitted.addListener(() => updateContextInfo());
         updateContextInfo();
     });
 

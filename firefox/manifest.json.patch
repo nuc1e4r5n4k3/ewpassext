@@ -1,0 +1,31 @@
+--- manifest.json.orig	2024-04-11 00:34:04.050132682 +0200
++++ manifest.json	2024-04-11 00:33:46.359819725 +0200
+@@ -1,6 +1,6 @@
+ {
+     "manifest_version": 3,
+-    "name": "E. W. Password Generator - Chromium Extension Edition",
++    "name": "E. W. Password Generator - Firefox Extension Edition",
+     "short_name": "ewpassext",
+     "description": "Extension that allows for semi-automated website specific password derivation based on a single master password",
+     "version": "1.2.5",
+@@ -8,7 +8,6 @@
+         "16": "icon16.png",
+         "48": "icon48.png"
+     },
+-    "key": "pjgkihajanbcehlidbefiinjdcogioeb",
+     "permissions": [
+         "activeTab",
+         "scripting",
+@@ -16,12 +15,8 @@
+         "webNavigation"
+     ],
+     "action": {
+-         "title": "E. W. Password Generator - Chromium Extension Edition",
+          "default_popup": "index.html"
+     },
+-    "background": {
+-        "service_worker": "serviceworker.js"
+-    },
+     "host_permissions": [
+         "https://*/*"
+     ],
