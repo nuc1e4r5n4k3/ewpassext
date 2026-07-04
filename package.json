@@ -29,7 +29,7 @@
     "scripts": {
         "start": "react-scripts start",
         "build": "GENERATE_SOURCEMAP=false react-scripts build && webpack -c webpack.serviceworker-config.js && webpack -c webpack.keepalivetab-config.js && webpack -c webpack.injectpassword-config.js && webpack -c webpack.popuphook-config.js",
-        "build-firefox": "yarn build && patch -d build < firefox/manifest.json.patch && cd build && zip -r {6d1f30b1-2f6d-48f9-a01a-c32a0c27d12d}.xpi .",
+        "build-firefox": "pnpm build && patch -d build < firefox/manifest.json.patch && cd build && zip -r {6d1f30b1-2f6d-48f9-a01a-c32a0c27d12d}.xpi .",
         "test": "react-scripts test",
         "eject": "react-scripts eject"
     },
