@@ -19,19 +19,10 @@
         "isolatedModules": true,
         "noEmit": true,
         "jsx": "react-jsx",
-        "types": ["chrome", "firefox-webext-browser"],
-        "typeRoots": [
-            "./node_modules/@types",
-            "./@types"
-        ]
+        "types": ["chrome", "firefox-webext-browser", "vite/client"]
     },
     "include": [
-        "src/custom.d.ts",
-        "src"
-    ],
-    "exclude": [
-        "src/keepalivetab",
-        "src/scriptinjections",
-        "src/serviceworker"
+        "src",
+        "vite.config.ts"
     ]
 }

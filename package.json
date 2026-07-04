@@ -18,20 +18,17 @@
         "react": "^19.2.7",
         "react-dom": "^19.2.7",
         "react-numeric-input": "^2.2.3",
-        "react-scripts": "5.0.1",
         "react-select": "^5.3.0",
         "sass": "^1.101.0",
         "sha256": "^0.2.0",
         "typescript": "^6.0.3",
-        "web-vitals": "^5.3.0",
-        "webpack-cli": "^7.2.1"
+        "web-vitals": "^5.3.0"
     },
     "scripts": {
-        "start": "react-scripts start",
-        "build": "GENERATE_SOURCEMAP=false react-scripts build && webpack -c webpack.serviceworker-config.js && webpack -c webpack.keepalivetab-config.js && webpack -c webpack.injectpassword-config.js && webpack -c webpack.popuphook-config.js",
-        "build-firefox": "pnpm build && patch -d build < firefox/manifest.json.patch && cd build && zip -r {6d1f30b1-2f6d-48f9-a01a-c32a0c27d12d}.xpi .",
-        "test": "react-scripts test",
-        "eject": "react-scripts eject"
+        "start": "vite",
+        "build": "vite build",
+        "build-firefox": "vite build && patch -d build < firefox/manifest.json.patch && cd build && zip -r {6d1f30b1-2f6d-48f9-a01a-c32a0c27d12d}.xpi .",
+        "test": "vitest"
     },
     "eslintConfig": {
         "extends": [
@@ -50,5 +47,11 @@
             "last 1 firefox version",
             "last 1 safari version"
         ]
+    },
+    "devDependencies": {
+        "@vitejs/plugin-react": "^6.0.3",
+        "happy-dom": "^20.10.6",
+        "vite": "^8.1.3",
+        "vitest": "^4.1.9"
     }
 }
