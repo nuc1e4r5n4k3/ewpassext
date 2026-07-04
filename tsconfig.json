@@ -18,11 +18,16 @@
         "resolveJsonModule": true,
         "isolatedModules": true,
         "noEmit": true,
-        "jsx": "react-jsx"
+        "jsx": "react-jsx",
+        "types": ["chrome", "firefox-webext-browser"],
+        "typeRoots": [
+            "./node_modules/@types",
+            "./@types"
+        ]
     },
     "include": [
-        "src",
-        "react-app-env.d.ts"
+        "src/custom.d.ts",
+        "src"
     ],
     "exclude": [
         "src/keepalivetab",
