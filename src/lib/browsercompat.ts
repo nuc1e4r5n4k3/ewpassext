@@ -1,12 +1,13 @@
+import { on_chrome } from "./browserdetect";
 
-export const action =       (chrome !== undefined ? chrome.action       : browser.action)       as typeof chrome.action;
-export const alarms =       (chrome !== undefined ? chrome.alarms       : browser.alarms)       as typeof chrome.alarms;
-export const storage =      (chrome !== undefined ? chrome.storage      : browser.storage)      as typeof chrome.storage;
-export const runtime =      (chrome !== undefined ? chrome.runtime      : browser.runtime)      as typeof chrome.runtime;
-export const scripting =    (chrome !== undefined ? chrome.scripting    : browser.scripting)    as typeof chrome.scripting;
-export const tabs =         (chrome !== undefined ? chrome.tabs         : browser.tabs)         as typeof chrome.tabs;
-export const webNavigation =(chrome !== undefined ? chrome.webNavigation: browser.webNavigation)as typeof chrome.webNavigation;
-export const windows =      (chrome !== undefined ? chrome.windows      : browser.windows)      as typeof chrome.windows;
+export const action =       (on_chrome ? chrome.action       : browser.action)       as typeof chrome.action;
+export const alarms =       (on_chrome ? chrome.alarms       : browser.alarms)       as typeof chrome.alarms;
+export const storage =      (on_chrome ? chrome.storage      : browser.storage)      as typeof chrome.storage;
+export const runtime =      (on_chrome ? chrome.runtime      : browser.runtime)      as typeof chrome.runtime;
+export const scripting =    (on_chrome ? chrome.scripting    : browser.scripting)    as typeof chrome.scripting;
+export const tabs =         (on_chrome ? chrome.tabs         : browser.tabs)         as typeof chrome.tabs;
+export const webNavigation =(on_chrome ? chrome.webNavigation: browser.webNavigation)as typeof chrome.webNavigation;
+export const windows =      (on_chrome ? chrome.windows      : browser.windows)      as typeof chrome.windows;
 
 const _everything = {
     'action': action,

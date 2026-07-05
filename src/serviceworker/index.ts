@@ -28,6 +28,8 @@ runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 addRequestHandler<OpenPopupRequest, OpenPopupResponse>('openPopup', async () => {
-    (action as any).openPopup();
+    if (typeof (action as any).openPopup === 'function') {
+        (action as any).openPopup();
+    }
     return { type: 'openPopup' };
 });

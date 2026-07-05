@@ -7,7 +7,7 @@
 +    "name": "E. W. Password Generator - Firefox Extension Edition",
      "short_name": "ewpassext",
      "description": "Extension that allows for semi-automated website specific password derivation based on a single master password",
-     "version": "1.2.5",
+     "version": "1.3.0",
 @@ -8,7 +8,6 @@
          "16": "icon16.png",
          "48": "icon48.png"
@@ -16,16 +16,16 @@
      "permissions": [
          "activeTab",
          "scripting",
-@@ -16,12 +15,8 @@
+@@ -16,11 +15,10 @@
          "webNavigation"
      ],
      "action": {
 -         "title": "E. W. Password Generator - Chromium Extension Edition",
           "default_popup": "index.html"
      },
--    "background": {
--        "service_worker": "serviceworker.js"
--    },
+     "background": {
+-        "service_worker": "serviceworker.js",
++        "scripts": ["serviceworker.js"],
+         "type": "module"
+     },
      "host_permissions": [
-         "https://*/*"
-     ],

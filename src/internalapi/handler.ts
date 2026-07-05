@@ -1,4 +1,4 @@
-import { EXTENSION_ID, EXTENSION_URL } from "./requests";
+import { EXTENSION_INTERNAL_ID, EXTENSION_URL } from "./requests";
 import { MessageType, Request, Response } from "./types";
 
 
@@ -6,7 +6,7 @@ type Handlers = { [key: string]: [(request: Request) => Promise<Response>, boole
 let handlers: Handlers = {};
 
 const isTrusted = (sender: chrome.runtime.MessageSender): boolean =>
-    sender.id === EXTENSION_ID &&
+    sender.id === EXTENSION_INTERNAL_ID &&
     sender.origin === EXTENSION_URL &&
     sender.url !== undefined && sender.url.startsWith(EXTENSION_URL + '/');
 
