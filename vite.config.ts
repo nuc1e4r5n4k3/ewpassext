@@ -15,14 +15,8 @@ export default defineConfig({
         // Other entrypoints
         serviceworker: resolve(__dirname, 'src/serviceworker/index.ts'),
 
-        'scriptinjections/popuphook': resolve(
-          __dirname,
-          'src/scriptinjections/popuphook/index.ts'
-        ),
-        'scriptinjections/injectpassword': resolve(
-          __dirname,
-          'src/scriptinjections/injectpassword/index.ts'
-        ),
+        contentscript: resolve(__dirname, 'src/scriptinjections/contentscript/index.ts'),
+        
       },
       output: {
         // [name].js is the default, but let's be explicit

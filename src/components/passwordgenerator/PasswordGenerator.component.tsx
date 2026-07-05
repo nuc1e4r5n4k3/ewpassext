@@ -41,7 +41,7 @@ export const PasswordGenerator: React.FC = () => {
 
         await scripting.executeScript({
             target: {tabId: context.tabId},
-            files: ['scriptinjections/injectpassword.js']
+            files: ['contentscript.js']
         });
         await scripting.executeScript({
             target: {tabId: context.tabId},

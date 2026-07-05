@@ -17,7 +17,7 @@ webNavigation.onCompleted.addListener(e => {
         return;
     }
     scripting.executeScript({
-        files: ['scriptinjections/popuphook.js'],
+        files: ['contentscript.js'],
         target: {tabId: e.tabId}
     });
 });
