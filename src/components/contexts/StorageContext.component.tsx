@@ -20,20 +20,16 @@ export interface IStorageContext {
     getConfigForDomainId?: (domainId: string|undefined) => IDomainConfig|undefined;
 }
 
-const loadAll = (): IStorageContext => {
-    return {
-        passwordChecksum: load('passwordChecksum')
-    };
-};
-
-export const StorageContext = createContext<IStorageContext>(loadAll());
+export const StorageContext = createContext<IStorageContext>({
+    passwordChecksum: undefined
+});
 
 type Props = {
     children: any;
 };
 export const StorageContextProvider: React.FC<Props> = ({children}) => {
-    const [ passwordChecksum, setPasswordChecksum ] = useState<string|undefined>(load('passwordChecksum'));
-    const [ domainConfigs, setDomainConfigs ] = useState<IMetadata>(load('metadata') || {});
+    const [ passwordChecksum, setPasswordChecksum ] = useState<string|undefined>(undefined);
+    const [ domainConfigs, setDomainConfigs ] = useState<IMetadata>({});
     const [ currentDomain, setCurrentDomain ] = useState<string|undefined>(undefined);
     const [ currentDomainId, setCurrentDomainId ] = useState<string|undefined>(undefined);
     const [ currentDomainConfig, setCurrentDomainConfig ] = useState<IDomainConfig|undefined>(undefined);
@@ -63,8 +59,20 @@ export const StorageContextProvider: React.FC<Props> = ({children}) => {
         setDomainConfigs(configs);
     };
 
-    useEffect(() => store('passwordChecksum', passwordChecksum), [passwordChecksum]);
-    useEffect(() => store('metadata', domainConfigs), [domainConfigs]);
+    useEffect(() => {
+        (async () => {
+            setPasswordChecksum(await load('passwordChecksum'));
+            setDomainConfigs(await load('metadata') || {});
+        })();
+    });
+
+    useEffect(() => {
+        store('passwordChecksum', passwordChecksum);
+    }, [passwordChecksum]);
+    
+    useEffect(() => {
+        store('metadata', domainConfigs);
+    }, [domainConfigs]);
 
     useEffect(() => {
         setCurrentDomainConfig(currentDomainId && currentDomainId in domainConfigs ? domainConfigs[currentDomainId] : undefined);

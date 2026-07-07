@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { getPasswordHash, sendKeepAlive, storePasswordHash as doStorePasswordHash } from '../../internalapi/requests';
+import { getPasswordHash, storePasswordHash as doStorePasswordHash } from '../../internalapi/requests';
 import { hashPassword } from '../../lib/derivation';
 import { StorageContext } from './StorageContext.component';
 
@@ -48,21 +48,6 @@ export const PasswordContextProvider: React.FC<Props> = ({children}) => {
             storePasswordHash(passwordHash);
         }
     }, [isInitial, passwordHash, storage]);
-
-    useEffect(() => {
-        let receivedResponse = true;
-        const timer = setInterval(async () => {
-            if (receivedResponse) {
-                receivedResponse = false;
-                const response = await sendKeepAlive();
-                receivedResponse = !passwordHash || response.cacheState;
-            } else if (passwordHash) {
-                await storePasswordHash(passwordHash);
-                receivedResponse = true;
-            }
-        }, 2000);
-        return () => clearInterval(timer);
-    })
 
     return (
         <PasswordContext.Provider value={{

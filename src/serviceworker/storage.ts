@@ -1,64 +1,28 @@
-import { EXTENSION_URL } from '../internalapi/requests';
-import { GetPasswordHashRequest, GetPasswordHashResponse, KeepAliveRequest, KeepAliveResponse, StorePasswordHashRequest, StorePasswordHashResponse } from '../internalapi/types';
-import { getServiceWorkerContext } from './context';
-import { tabs } from '../lib/browsercompat';
+import { addRequestHandler } from '../internalapi/handler';
+import { GetPasswordHashRequest, GetPasswordHashResponse, StorePasswordHashRequest, StorePasswordHashResponse } from '../internalapi/types';
+import { alarms } from '../lib/browsercompat';
+import { load_string, store_string } from '../lib/storage';
+
+const PASSWORD_HASH_KEY = 'passwordHash';
+const CLEAR_PASSWORD_ALARM = 'clearPassword';
 
 
-const openKeepAliveTab = () => {
-    tabs.create({
-        url: EXTENSION_URL + '/keepalivetab.html',
-        active: false,
-        pinned: true
-    });
-    getServiceWorkerContext().lastTabKeepAlive = new Date().getTime();
-};
+const store_password_hash = (hash?: string) => store_string(PASSWORD_HASH_KEY, hash);
+const load_password_hash = () => load_string(PASSWORD_HASH_KEY);
 
-export const isPasswordHashCached = () =>
-    !!getServiceWorkerContext().passwordHash;
-
-const isKeepAliveTabActive = () => {
-    let ctx = getServiceWorkerContext();
-    return ctx.lastTabKeepAlive && new Date().getTime() - ctx.lastTabKeepAlive < 5000;
-}
-
-export const handleKeepAlive = (request: KeepAliveRequest): KeepAliveResponse => {
-    const ctx = getServiceWorkerContext();
-    const currentlyCached = !!ctx.passwordHash;
-
-    if (request.from === 'keepAliveTab')
-        ctx.lastTabKeepAlive = new Date().getTime();
-    else if (currentlyCached && !isKeepAliveTabActive())
-        openKeepAliveTab();
-
+addRequestHandler<GetPasswordHashRequest, GetPasswordHashResponse>('getPasswordHash', async (request: GetPasswordHashRequest): Promise<GetPasswordHashResponse> => {
     return {
-        type: 'keepAlive',
-        cacheState: currentlyCached
+        type: 'getPasswordHash',
+        passwordHash: await load_password_hash()
     };
-};
+}, true);
 
-export const handleStorePasswordHash = (request: StorePasswordHashRequest): StorePasswordHashResponse => {
-    let ctx = getServiceWorkerContext();
-    const newPasswordHash = request.passwordHash ? request.passwordHash : null;
+addRequestHandler<StorePasswordHashRequest, StorePasswordHashResponse>('storePasswordHash', async (request: StorePasswordHashRequest): Promise<StorePasswordHashResponse> => {
+    await store_password_hash(request.passwordHash);
+        
+    if (request.passwordHashTtl && request.passwordHash !== undefined) {
+        alarms.create(CLEAR_PASSWORD_ALARM, { delayInMinutes: request.passwordHashTtl / 60 });
+    }
     
-    if (!ctx.passwordHash && newPasswordHash && !isKeepAliveTabActive())
-        openKeepAliveTab();
-
-    ctx.passwordHash = newPasswordHash;
-
-    if (ctx.passwordHashTimer !== undefined) {
-        clearTimeout(ctx.passwordHashTimer);
-    }
-
-    if (ctx.passwordHash && request.passwordHashTtl) {
-        ctx.passwordHashTimer = setTimeout(() => {
-            ctx.passwordHash = null;
-            ctx.passwordHashTimer = undefined;
-        }, request.passwordHashTtl * 1000);
-    }
     return { type: 'storePasswordHash' };
-};
-
-export const handleGetPasswordHash = (request: GetPasswordHashRequest): GetPasswordHashResponse => ({
-    type: 'getPasswordHash',
-    passwordHash: getServiceWorkerContext().passwordHash
-});
+}, true);

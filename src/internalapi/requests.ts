@@ -1,5 +1,5 @@
 import { runtime } from '../lib/browsercompat';
-import { GetPasswordHashRequest, GetPasswordHashResponse, KeepAliveRequest, KeepAliveResponse, KeepAliveSource, OpenPopupRequest, OpenPopupResponse, Request, Response, StorePasswordHashRequest, StorePasswordHashResponse } from './types';
+import { GetPasswordHashRequest, GetPasswordHashResponse, OpenPopupRequest, OpenPopupResponse, Request, Response, StorePasswordHashRequest, StorePasswordHashResponse } from './types';
 
 
 export const EXTENSION_ID = chrome !== undefined ? 'plnponcbnkhnjaopjjgagpkameffpllm' : 'a75ac207-c1c3-4ad8-8f4d-7fea28eaacd4';
@@ -10,12 +10,6 @@ const sendRequest = <RequestT extends Request, ResponseT extends Response> (requ
     runtime.sendMessage(EXTENSION_ID, request, response => {
         resolve(response);
     }));
-
-export const sendKeepAlive = (from: KeepAliveSource = 'popup') =>
-    sendRequest<KeepAliveRequest, KeepAliveResponse>({
-        type: 'keepAlive',
-        from: from
-    });
 
 export const openExtensionPopup = () =>
     sendRequest<OpenPopupRequest, OpenPopupResponse>({ type: 'openPopup' });

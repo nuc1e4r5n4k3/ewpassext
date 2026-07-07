@@ -1,11 +1,19 @@
 import { addRequestHandler, handleRequest } from '../internalapi/handler';
-import { GetPasswordHashRequest, GetPasswordHashResponse, KeepAliveRequest, KeepAliveResponse, OpenPopupRequest, OpenPopupResponse, StorePasswordHashRequest, StorePasswordHashResponse } from '../internalapi/types';
-import { action, runtime, scripting, webNavigation } from '../lib/browsercompat';
-import { handleGetPasswordHash, handleKeepAlive, handleStorePasswordHash } from './storage';
+import { OpenPopupRequest, OpenPopupResponse } from '../internalapi/types';
+import { action, alarms, runtime, scripting, storage, webNavigation } from '../lib/browsercompat';
+import {} from './storage';
 
+const PASSWORD_HASH_KEY = 'passwordHash';
+const CLEAR_PASSWORD_ALARM = 'clearPassword';
+
+alarms.onAlarm.addListener(async alarm => {
+    if (alarm.name === CLEAR_PASSWORD_ALARM) {
+        await storage.session.remove(PASSWORD_HASH_KEY);
+    }
+});
 
 webNavigation.onCompleted.addListener(e => {
-    if (e.url.substr(0, 8) !== 'https://' || e.frameId) {
+    if (e.url.substring(0, 8) !== 'https://' || e.frameId) {
         return;
     }
     scripting.executeScript({
@@ -14,16 +22,12 @@ webNavigation.onCompleted.addListener(e => {
     });
 });
 
-runtime.onMessage.addListener((message, sender, sendResponse) =>
-    handleRequest(message, sendResponse, sender)
-);
+runtime.onMessage.addListener((message, sender, sendResponse) => {
+    handleRequest(message, sendResponse, sender);
+    return true;
+});
 
-addRequestHandler<GetPasswordHashRequest, GetPasswordHashResponse>('getPasswordHash', handleGetPasswordHash, true);
-addRequestHandler<StorePasswordHashRequest, StorePasswordHashResponse>('storePasswordHash', handleStorePasswordHash, true);
-addRequestHandler<KeepAliveRequest, KeepAliveResponse>('keepAlive', handleKeepAlive);
-
-addRequestHandler<OpenPopupRequest, OpenPopupResponse>('openPopup', () => {
+addRequestHandler<OpenPopupRequest, OpenPopupResponse>('openPopup', async () => {
     (action as any).openPopup();
     return { type: 'openPopup' };
 });
-

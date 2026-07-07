@@ -14,7 +14,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         // Other entrypoints
         serviceworker: resolve(__dirname, 'src/serviceworker/index.ts'),
-        keepalivetab: resolve(__dirname, 'src/keepalivetab/index.ts'),
+
         'scriptinjections/popuphook': resolve(
           __dirname,
           'src/scriptinjections/popuphook/index.ts'
