@@ -69,8 +69,11 @@ export const StorageContextProvider: React.FC<Props> = ({children}) => {
     
     useEffect(() => {
         (async () => {
-            if (domainConfigs === undefined) {
-                setDomainConfigs(await load('metadata') || {});
+            if (Object.keys(domainConfigs).length === 0) {
+                const loaded = await load<Configuration>('metadata') || {};
+                if (Object.keys(loaded).length > 0) {
+                    setDomainConfigs(loaded);
+                }
             } else {
                 await store('metadata', domainConfigs);
             }
