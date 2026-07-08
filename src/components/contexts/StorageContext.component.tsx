@@ -1,8 +1,6 @@
 import { createContext, useEffect, useState } from 'react';
-import { IDomainConfig, load, store } from '../../lib/storage';
+import { Configuration, IDomainConfig, load, store } from '../../lib/storage';
 
-
-type IMetadata = { [key: string]: IDomainConfig };
 
 export interface IStorageContext {
     passwordChecksum?: string;
@@ -29,7 +27,7 @@ type Props = {
 };
 export const StorageContextProvider: React.FC<Props> = ({children}) => {
     const [ passwordChecksum, setPasswordChecksum ] = useState<string|null|undefined>(null);
-    const [ domainConfigs, setDomainConfigs ] = useState<IMetadata>({});
+    const [ domainConfigs, setDomainConfigs ] = useState<Configuration>({});
     const [ currentDomain, setCurrentDomain ] = useState<string|undefined>(undefined);
     const [ currentDomainId, setCurrentDomainId ] = useState<string|undefined>(undefined);
     const [ currentDomainConfig, setCurrentDomainConfig ] = useState<IDomainConfig|undefined>(undefined);

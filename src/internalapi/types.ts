@@ -1,5 +1,5 @@
 
-export type MessageType = 'keepAlive'|'openPopup'|'getPasswordHash'|'storePasswordHash';
+export type MessageType = 'keepAlive'|'openPopup'|'getPasswordHash'|'storePasswordHash'|'getDerivedPassword';
 
 export interface Message {
     type: MessageType
@@ -34,4 +34,13 @@ export interface GetPasswordHashResponse extends Response {
     type: 'getPasswordHash';
     passwordHash: string|undefined;
     expiresAt: number|undefined;
+};
+
+export interface GetDerivedPasswordRequest extends Request {
+    type: 'getDerivedPassword';
+};
+
+export interface GetDerivedPasswordResponse extends Response {
+    type: 'getDerivedPassword';
+    password: string|undefined;
 };

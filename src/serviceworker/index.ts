@@ -1,6 +1,7 @@
 import { addRequestHandler, handleRequest } from '../internalapi/handler';
 import { OpenPopupRequest, OpenPopupResponse } from '../internalapi/types';
 import { action, alarms, runtime, scripting, storage, webNavigation } from '../lib/browsercompat';
+import {} from './derivedpassword';
 import {} from './storage';
 
 const PASSWORD_HASH_KEY = 'passwordHash';

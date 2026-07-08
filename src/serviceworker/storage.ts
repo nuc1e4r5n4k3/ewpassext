@@ -1,4 +1,4 @@
-import { addRequestHandler } from '../internalapi/handler';
+import { addRequestHandler, TrustLevel } from '../internalapi/handler';
 import { GetPasswordHashRequest, GetPasswordHashResponse, StorePasswordHashRequest, StorePasswordHashResponse } from '../internalapi/types';
 import { alarms } from '../lib/browsercompat';
 import { load, store } from '../lib/storage';
@@ -15,7 +15,7 @@ const getCurrentTime = () => Math.floor(new Date().getTime() / 1000);
 
 
 const store_password_hash = (hash?: string, expires?: number) => store<StoredHash>(PASSWORD_HASH_KEY, hash !== undefined ? { "hash": hash, "expires": expires } : undefined);
-const load_password_hash = async (): Promise<[string, number?] | undefined> => {
+export const load_password_hash = async (): Promise<[string, number?] | undefined> => {
     const stored = await load<StoredHash>(PASSWORD_HASH_KEY);
     if (stored !== undefined) {
         return [stored.hash, stored.expires];
@@ -30,7 +30,7 @@ addRequestHandler<GetPasswordHashRequest, GetPasswordHashResponse>('getPasswordH
         passwordHash: passwordHash,
         expiresAt: expiresAt
     };
-}, true);
+}, TrustLevel.FromExtension);
 
 addRequestHandler<StorePasswordHashRequest, StorePasswordHashResponse>('storePasswordHash', async (request: StorePasswordHashRequest): Promise<StorePasswordHashResponse> => {
     if (request.passwordHashTtl && request.passwordHash !== undefined) {
@@ -39,4 +39,4 @@ addRequestHandler<StorePasswordHashRequest, StorePasswordHashResponse>('storePas
 
     await store_password_hash(request.passwordHash, request.passwordHashTtl ? getCurrentTime() + request.passwordHashTtl : undefined);    
     return { type: 'storePasswordHash' };
-}, true);
+}, TrustLevel.FromExtension);

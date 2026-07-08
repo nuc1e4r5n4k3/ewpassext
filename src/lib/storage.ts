@@ -8,13 +8,13 @@ export interface IDomainConfig {
     allowExtraLongPasswords: boolean;
 }
 
+export type Configuration = { [key: string]: IDomainConfig };
+
+
 export type LegacyDomainConfig = [
     length: number, iteration: number, useSpecialCharacters: boolean, allowExtraLongPasswords?: boolean
 ];
 export type LegacyBackup = { [domainId: string]: LegacyDomainConfig };
-
-
-type Configuration = { [key: string]: IDomainConfig };
 
 
 export const load = async <T>(name: string): Promise<T | undefined> => {

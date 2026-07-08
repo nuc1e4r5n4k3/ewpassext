@@ -1,6 +1,6 @@
 import { runtime } from '../lib/browsercompat';
 import { on_chrome } from '../lib/browserdetect';
-import { GetPasswordHashRequest, GetPasswordHashResponse, OpenPopupRequest, OpenPopupResponse, Request, Response, StorePasswordHashRequest, StorePasswordHashResponse } from './types';
+import { GetDerivedPasswordRequest, GetDerivedPasswordResponse, GetPasswordHashRequest, GetPasswordHashResponse, OpenPopupRequest, OpenPopupResponse, Request, Response, StorePasswordHashRequest, StorePasswordHashResponse } from './types';
 
 
 export const EXTENSION_ID = on_chrome ? 'plnponcbnkhnjaopjjgagpkameffpllm' : 'bc45bfda-1f2a-4a0c-bf2c-94890812eebe';
@@ -19,6 +19,9 @@ export const openExtensionPopup = () =>
 
 export const getPasswordHash = () => 
     sendRequest<GetPasswordHashRequest, GetPasswordHashResponse>({ type: 'getPasswordHash' });
+
+export const getDerivedPassword = () => 
+    sendRequest<GetDerivedPasswordRequest, GetDerivedPasswordResponse>({ type: 'getDerivedPassword' });
 
 export const storePasswordHash = (passwordHash: string|undefined, ttl?: number) =>
     sendRequest<StorePasswordHashRequest, StorePasswordHashResponse>({
