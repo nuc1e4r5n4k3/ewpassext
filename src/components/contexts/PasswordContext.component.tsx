@@ -6,6 +6,7 @@ import { StorageContext } from './StorageContext.component';
 
 export interface IPasswordContext {
     hash?: string;
+    expiresAt?: number;
     correct: boolean;
     set: (password: string) => void;
     clear: () => void;
@@ -19,8 +20,9 @@ const matchesChecksum = (passwordHash?: string, checksum?: string): boolean => {
     return checksum === undefined || passwordHash?.substr(0, 2) === checksum;
 };
 
-const storePasswordHash = async (passwordHash: string|undefined) =>
+const storePasswordHash = async (passwordHash: string|undefined) => {
     await doStorePasswordHash(passwordHash, passwordHash ? PASSWORD_TTL : undefined);
+};
 
 type Props = {
     children: any;
@@ -28,33 +30,43 @@ type Props = {
 export const PasswordContextProvider: React.FC<Props> = ({children}) => {
     const storage = useContext(StorageContext);
     const [ passwordHash, setPasswordHash ] = useState<string>();
+    const [ passwordExpires, setPasswordExpiresAt ] = useState<number|undefined>();
     const [ isInitial, setInitial ] = useState<boolean>(true);
 
     const setPassword = (password: string) => {
-        setPasswordHash(hashPassword(password));
+        if (password.length === 0) {
+            return;
+        }
+
+        let hash = hashPassword(password);
+        setPasswordHash(hash);
+        
+        if (matchesChecksum(hash, storage.passwordChecksum)) {
+            storePasswordHash(hash);
+        }
     };
 
     useEffect(() => {
         if (isInitial && passwordHash === undefined) {
             getPasswordHash().then(response => {
                 setPasswordHash(response.passwordHash || undefined);
+                setPasswordExpiresAt(response.expiresAt);
                 setInitial(false);
             });
         }
     }, [isInitial, passwordHash]);
 
-    useEffect(() => {
-        if (matchesChecksum(passwordHash, storage.passwordChecksum) || (passwordHash === undefined && !isInitial)) {
-            storePasswordHash(passwordHash);
-        }
-    }, [isInitial, passwordHash, storage]);
-
     return (
         <PasswordContext.Provider value={{
             hash: passwordHash,
+            expiresAt: passwordExpires,
             set: setPassword,
             correct: matchesChecksum(passwordHash, storage.passwordChecksum),
-            clear: () => setPasswordHash(undefined)
+            clear: () => {
+                setPasswordHash(undefined);
+                setPasswordExpiresAt(undefined);
+                storePasswordHash(undefined);
+            }
         }}>
             {children}
         </PasswordContext.Provider>

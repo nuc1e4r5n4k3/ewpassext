@@ -20,7 +20,7 @@ export const MasterPassword: React.FC = () => {
 
     useEffect(() => {
         if (passwordContext?.hash) {
-            setPasswordClearTime(now + (passwordContext.correct ? PASSWORD_TTL : 3));
+            setPasswordClearTime(passwordContext?.expiresAt || now + (passwordContext.correct ? PASSWORD_TTL : 3));
         } else {
             passwordInput.current?.focus();
             setPasswordClearTime(undefined);

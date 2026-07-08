@@ -33,4 +33,5 @@ export interface GetPasswordHashRequest extends Request {
 export interface GetPasswordHashResponse extends Response {
     type: 'getPasswordHash';
     passwordHash: string|undefined;
+    expiresAt: number|undefined;
 };

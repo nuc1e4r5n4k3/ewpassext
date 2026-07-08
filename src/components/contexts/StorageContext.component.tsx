@@ -28,7 +28,7 @@ type Props = {
     children: any;
 };
 export const StorageContextProvider: React.FC<Props> = ({children}) => {
-    const [ passwordChecksum, setPasswordChecksum ] = useState<string|undefined>(undefined);
+    const [ passwordChecksum, setPasswordChecksum ] = useState<string|null|undefined>(null);
     const [ domainConfigs, setDomainConfigs ] = useState<IMetadata>({});
     const [ currentDomain, setCurrentDomain ] = useState<string|undefined>(undefined);
     const [ currentDomainId, setCurrentDomainId ] = useState<string|undefined>(undefined);
@@ -61,17 +61,22 @@ export const StorageContextProvider: React.FC<Props> = ({children}) => {
 
     useEffect(() => {
         (async () => {
-            setPasswordChecksum(await load('passwordChecksum'));
-            setDomainConfigs(await load('metadata') || {});
+            if (passwordChecksum === null) {
+                setPasswordChecksum(await load('passwordChecksum'));
+            } else {
+                store('passwordChecksum', passwordChecksum);
+            }
         })();
-    });
-
-    useEffect(() => {
-        store('passwordChecksum', passwordChecksum);
     }, [passwordChecksum]);
     
     useEffect(() => {
-        store('metadata', domainConfigs);
+        (async () => {
+            if (domainConfigs === undefined) {
+                setDomainConfigs(await load('metadata') || {});
+            } else {
+                await store('metadata', domainConfigs);
+            }
+        })();
     }, [domainConfigs]);
 
     useEffect(() => {
@@ -80,7 +85,7 @@ export const StorageContextProvider: React.FC<Props> = ({children}) => {
 
     return (
         <StorageContext.Provider value={{
-            passwordChecksum: passwordChecksum,
+            passwordChecksum: passwordChecksum || undefined,
             currentDomain: currentDomain,
             currentDomainId: currentDomainId,
             currentDomainConfig: currentDomainConfig,
