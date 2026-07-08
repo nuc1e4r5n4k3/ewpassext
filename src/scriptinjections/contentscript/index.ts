@@ -5,6 +5,21 @@ import { IDomainConfig, load } from '../../lib/storage';
 import { getInjectionContext } from '../context';
 
 
+const setInputValue = (input: HTMLInputElement, value: string) => {
+    const lastValue = input.value;
+    input.value = value;
+
+    const event = new Event('input', { bubbles: true });
+    // React 15
+    (event as any).simulated = true;
+    // React 16
+    let tracker = (input as any)._valueTracker;
+    if (tracker) {
+        tracker.setValue(lastValue);
+    }
+    input.dispatchEvent(event);
+};
+
 const tryOpenPopup = (input: HTMLInputElement) => {
     let ctx = getInjectionContext();
     const now = new Date().getTime();
@@ -28,7 +43,7 @@ const autoInjectPassword = async (input: HTMLInputElement) => {
 
 getInjectionContext().injectPassword = (password: string) => {
     for (let input of new DocumentSearcher().getPasswordInputsInDocumentAndIFrames()) {
-        input.value = password;
+        setInputValue(input, password);
     }
 };
 
