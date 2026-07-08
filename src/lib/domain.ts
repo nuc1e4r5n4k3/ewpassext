@@ -11,7 +11,11 @@ const isValidDomain = (domain: string) => {
 };
 
 export const parseDomainFromUrl = (url: string) => {
-    return url.split('://')[1].split('/')[0];
+    let parts = url.split('://');
+    if (parts.length < 2) {
+        return '';
+    }
+    return parts[1].split('/')[0];
 };
 
 export const getParentDomains = (domain: string) => {
