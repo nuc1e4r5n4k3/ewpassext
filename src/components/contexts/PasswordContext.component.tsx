@@ -12,7 +12,7 @@ export interface IPasswordContext {
     clear: () => void;
 }
 
-export const PASSWORD_TTL = 300;
+export const PASSWORD_TTL = 180;
 
 export const PasswordContext = createContext<IPasswordContext|undefined>(undefined);
 
