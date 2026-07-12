@@ -1,6 +1,6 @@
 import { addRequestHandler, TrustLevel } from '../internalapi/handler';
 import { GetPasswordHashRequest, GetPasswordHashResponse, StorePasswordHashRequest, StorePasswordHashResponse } from '../internalapi/types';
-import { alarms } from '../lib/browsercompat';
+import { alarms, storage } from '../lib/browsercompat';
 import { load, store } from '../lib/storage';
 
 const PASSWORD_HASH_KEY = 'passwordHash';
@@ -14,9 +14,9 @@ interface StoredHash {
 const getCurrentTime = () => Math.floor(new Date().getTime() / 1000);
 
 
-const store_password_hash = (hash?: string, expires?: number) => store<StoredHash>(PASSWORD_HASH_KEY, hash !== undefined ? { "hash": hash, "expires": expires } : undefined);
+const store_password_hash = (hash?: string, expires?: number) => store<StoredHash>(PASSWORD_HASH_KEY, hash !== undefined ? { "hash": hash, "expires": expires } : undefined, storage.session);
 export const load_password_hash = async (): Promise<[string, number?] | undefined> => {
-    const stored = await load<StoredHash>(PASSWORD_HASH_KEY);
+    const stored = await load<StoredHash>(PASSWORD_HASH_KEY, storage.session);
     if (stored !== undefined) {
         return [stored.hash, stored.expires];
     }

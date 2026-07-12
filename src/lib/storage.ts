@@ -17,8 +17,8 @@ export type LegacyDomainConfig = [
 export type LegacyBackup = { [domainId: string]: LegacyDomainConfig };
 
 
-export const load = async <T>(name: string): Promise<T | undefined> => {
-    let value = await load_string(name);
+export const load = async <T>(name: string, area = storage.local): Promise<T | undefined> => {
+    let value = await load_string(name, area);
     
     if (value !== undefined) {
         try {
@@ -28,20 +28,20 @@ export const load = async <T>(name: string): Promise<T | undefined> => {
     return undefined;
 };
 
-export const load_string = async (name: string): Promise<string | undefined> => {
-    const value = await storage.local.get(name);    
+export const load_string = async (name: string, area = storage.local): Promise<string | undefined> => {
+    const value = await area.get(name);    
     return typeof value[name] === 'string' ? value[name] : undefined;
 };
 
-export const store = async <T>(name: string, value: T | undefined) => {
-    store_string(name, value !== undefined ? JSON.stringify(value) : undefined);
+export const store = async <T>(name: string, value: T | undefined, area = storage.local) => {
+    store_string(name, value !== undefined ? JSON.stringify(value) : undefined, area);
 };
 
-export const store_string = async (name: string, value?: string) => {
+export const store_string = async (name: string, value?: string, area = storage.local) => {
     if (value === undefined) {
-        await storage.local.remove(name);
+        await area.remove(name);
     } else {
-        await storage.local.set({ [name]: value });
+        await area.set({ [name]: value });
     }
 };
 
