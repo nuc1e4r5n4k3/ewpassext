@@ -30,14 +30,18 @@ const objectsAreEqual = (object1: any, object2: any): boolean => {
     return true;
 };
 
-export const DerivationOptions: React.FC = () => {
+type Props = {
+    showBackupOptions: () => void;
+}
+
+export const DerivationOptions: React.FC<Props> = ({ showBackupOptions }) => {
     const storage = useContext(ConfigurationContext);
-    const [ maxPasswordSize, setMaxPasswordSize ] = useState<number>(32);
-    const [ useSpecialCharacters, setUseSpecialCharacters ] = useState<boolean>(true);
-    const [ allowExtraLongPasswords, setAllowExtraLongPasswords ] = useState<boolean>(false);
-    const [ passwordSize, setPasswordSize ] = useState<number>(16);
-    const [ iteration, setIteration ] = useState<number>(1);
-    const [ dirty, setDirty ] = useState<boolean>(false);
+    const [maxPasswordSize, setMaxPasswordSize] = useState<number>(32);
+    const [useSpecialCharacters, setUseSpecialCharacters] = useState<boolean>(true);
+    const [allowExtraLongPasswords, setAllowExtraLongPasswords] = useState<boolean>(false);
+    const [passwordSize, setPasswordSize] = useState<number>(16);
+    const [iteration, setIteration] = useState<number>(1);
+    const [dirty, setDirty] = useState<boolean>(false);
 
     const saveConfig = () => {
         if (storage.setConfigForCurrentDomain) {
@@ -69,6 +73,7 @@ export const DerivationOptions: React.FC = () => {
 
     return (
         <UIGroup title='Options'>
+            <div className={classes.backupOptions}><a href='#' onClick={showBackupOptions}>backup options</a></div>
             <div className={classes.table}>
                 <Row>
                     <RowHeader value='Password length:' />
@@ -76,7 +81,7 @@ export const DerivationOptions: React.FC = () => {
                         <NumericInput size={2} value={passwordSize} min={10} max={maxPasswordSize} disabled={!storage.currentDomainId} className={classes.input} onChange={value => {
                             if (value !== null && value >= 10 && value <= maxPasswordSize)
                                 setPasswordSize(value);
-                        }}/>
+                        }} />
                     </div>
                 </Row>
                 <Row>
@@ -85,7 +90,7 @@ export const DerivationOptions: React.FC = () => {
                         <NumericInput size={2} value={iteration} min={1} max={100} disabled={!storage.currentDomainId} className={classes.input} onChange={value => {
                             if (value !== null && value >= 1 && value <= 100)
                                 setIteration(value);
-                        }}/>
+                        }} />
                     </div>
                 </Row>
                 <Row>

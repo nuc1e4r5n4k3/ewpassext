@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { Configuration, IDomainConfig, load, store } from '../../lib/storage';
+import { Configuration, IDomainConfig, load, store, serializeAll as exportConfigurations, importBackup } from '../../lib/storage';
 import { getDomainIds } from '../../lib/derivation';
 import { PasswordContext } from './PasswordContext.component';
 
@@ -10,6 +10,7 @@ export interface IConfigurationContext {
     currentDomainConfig?: IDomainConfig;
     currentDomainIsForPage?: boolean;
     useLegacyDerivation: boolean;
+    totalConfigurations?: number;
 
     setLegacyDerivation?: (useLegacy: boolean) => void;
     setConfigForCurrentDomain?: (config: IDomainConfig) => void;
@@ -18,6 +19,9 @@ export interface IConfigurationContext {
     clearSelection?: () => void;
     findDomainWithConfig?: (domains: string[]) => Promise<string | undefined>;
     checkDomainHasConfig?: (domain: string) => Promise<boolean>;
+
+    exportConfigurations?: () => Promise<string>;
+    importConfigurations?: (config: string, clearExisting: boolean) => Promise<number>;
 }
 
 export const ConfigurationContext = createContext<IConfigurationContext>({
@@ -27,20 +31,20 @@ export const ConfigurationContext = createContext<IConfigurationContext>({
 type Props = {
     children: any;
 };
-export const ConfigurationContextProvider: React.FC<Props> = ({children}) => {
+export const ConfigurationContextProvider: React.FC<Props> = ({ children }) => {
     const passwordContext = useContext(PasswordContext);
-    const [ domainConfigs, setDomainConfigs ] = useState<Configuration>({});
-    const [ currentDomain, setCurrentDomain ] = useState<string|undefined>(undefined);
-    const [ currentDomainId, setCurrentDomainId ] = useState<string|undefined>(undefined);
-    const [ currentDomainConfig, setCurrentDomainConfig ] = useState<IDomainConfig|undefined>(undefined);
-    const [ isForCurrentPage, setForCurrentPage ] = useState<boolean>(true);
-    const [ useLegacyDerivation, setLegacyDerivation ] = useState<boolean>(false);
+    const [domainConfigs, setDomainConfigs] = useState<Configuration>({});
+    const [currentDomain, setCurrentDomain] = useState<string | undefined>(undefined);
+    const [currentDomainId, setCurrentDomainId] = useState<string | undefined>(undefined);
+    const [currentDomainConfig, setCurrentDomainConfig] = useState<IDomainConfig | undefined>(undefined);
+    const [isForCurrentPage, setForCurrentPage] = useState<boolean>(true);
+    const [useLegacyDerivation, setLegacyDerivation] = useState<boolean>(false);
 
-    const updateCurrentDomainConfig = (config: IDomainConfig|undefined) => {
+    const updateCurrentDomainConfig = (config: IDomainConfig | undefined) => {
         if (!currentDomainId)
             return;
 
-        let configs = {...domainConfigs};
+        let configs = { ...domainConfigs };
 
         if (config !== undefined) {
             configs[currentDomainId] = config;
@@ -111,6 +115,13 @@ export const ConfigurationContextProvider: React.FC<Props> = ({children}) => {
         return ids.legacyId in domainConfigs || ids.id in domainConfigs;
     };
 
+    const importConfigurations = async (config: string, clearExisting: boolean): Promise<number> => {
+        const count = await importBackup(config, clearExisting);
+        const loaded = await load<Configuration>('metadata') || {};
+        setDomainConfigs(loaded);
+        return count;
+    };
+
     return (
         <ConfigurationContext.Provider value={{
             currentDomain: currentDomain,
@@ -118,6 +129,7 @@ export const ConfigurationContextProvider: React.FC<Props> = ({children}) => {
             currentDomainConfig: currentDomainConfig,
             currentDomainIsForPage: isForCurrentPage,
             useLegacyDerivation: useLegacyDerivation,
+            totalConfigurations: domainConfigs !== undefined ? Object.keys(domainConfigs).length : undefined,
 
             setLegacyDerivation: setLegacyDerivation,
             setConfigForCurrentDomain: updateCurrentDomainConfig,
@@ -132,7 +144,10 @@ export const ConfigurationContextProvider: React.FC<Props> = ({children}) => {
                 setForCurrentPage(true);
             },
             findDomainWithConfig: findDomainWithConfig,
-            checkDomainHasConfig: checkDomainHasConfig
+            checkDomainHasConfig: checkDomainHasConfig,
+
+            exportConfigurations: exportConfigurations,
+            importConfigurations: importConfigurations
         }}>
             {children}
         </ConfigurationContext.Provider>

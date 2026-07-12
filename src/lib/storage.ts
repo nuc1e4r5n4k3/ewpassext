@@ -91,9 +91,15 @@ export const serializeAll = async (): Promise<string> => {
 const getConfigStore = async (ignoreExisting: boolean = false): Promise<Configuration> =>
     (ignoreExisting ? undefined : await load('metadata')) || {};
 
-export const importBackup = async (config: string, clearExisting: boolean = false) => {
-    if (config.length % 14 !== 0) {
-        throw Error(`Unexpected backup size: ${config.length} is not divisible by 14`);
+export const preParseBackup = (config: string): number|undefined => {
+    if (/^([0-9a-fA-F]{14})+$/.test(config)) {
+        return config.length / 14;
+    }
+}
+    
+export const importBackup = async (config: string, clearExisting: boolean = false): Promise<number> => {
+    if (preParseBackup(config) === undefined) {
+        throw Error('Invalid configuration backup string');
     }
 
     const configs = await getConfigStore(clearExisting);
@@ -104,7 +110,7 @@ export const importBackup = async (config: string, clearExisting: boolean = fals
     }
 
     await store('metadata', configs);
-    console.log(`Total configurations: ${Object.keys(configs).length}`);
+    return Object.keys(configs).length;
 };
 
 export const importLegacyBackup = async (config: LegacyBackup, password: string, clearExisting: boolean = false) => {

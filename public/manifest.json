@@ -12,6 +12,7 @@
     "permissions": [
         "activeTab",
         "alarms",
+        "clipboardRead",
         "scripting",
         "storage",
         "webNavigation"
