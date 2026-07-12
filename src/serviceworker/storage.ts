@@ -23,6 +23,12 @@ export const load_password_hash = async (): Promise<[string, number?] | undefine
     return undefined;
 };
 
+alarms.onAlarm.addListener(async alarm => {
+    if (alarm.name === CLEAR_PASSWORD_ALARM) {
+        await store_password_hash(undefined);
+    }
+});
+
 addRequestHandler<GetPasswordHashRequest, GetPasswordHashResponse>('getPasswordHash', async (request: GetPasswordHashRequest): Promise<GetPasswordHashResponse> => {
     let [passwordHash, expiresAt] = await load_password_hash() || [undefined, undefined];
     return {

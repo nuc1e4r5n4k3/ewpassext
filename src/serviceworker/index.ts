@@ -1,17 +1,8 @@
 import { addRequestHandler, handleRequest } from '../internalapi/handler';
 import { OpenPopupRequest, OpenPopupResponse } from '../internalapi/types';
-import { action, alarms, runtime, scripting, storage, webNavigation } from '../lib/browsercompat';
+import { action, runtime, scripting, webNavigation } from '../lib/browsercompat';
 import {} from './derivedpassword';
 import {} from './storage';
-
-const PASSWORD_HASH_KEY = 'passwordHash';
-const CLEAR_PASSWORD_ALARM = 'clearPassword';
-
-alarms.onAlarm.addListener(async alarm => {
-    if (alarm.name === CLEAR_PASSWORD_ALARM) {
-        await storage.session.remove(PASSWORD_HASH_KEY);
-    }
-});
 
 webNavigation.onCompleted.addListener(e => {
     if (e.url.substring(0, 8) !== 'https://' || e.frameId) {
