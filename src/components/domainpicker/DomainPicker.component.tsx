@@ -48,12 +48,12 @@ export const DomainPicker: React.FC = () => {
     const context = useContext(PageContext);
     const storage = useContext(ConfigurationContext);
     const passwordContext = useContext(PasswordContext);
-    const [ selectedDomain, setSelectedDomain ] = useState<string>();
-    const [ showDeleteConfig, setShowDeleteConfig ] = useState<boolean>(false);
-    const [ showDomainInput, setShowDomainInput ] = useState<boolean>(false);
-    const [ enteredDomain, setEnteredDomain ] = useState<string>('');
-    const [ matchState, setMatchState ] = useState<MatchState|undefined>(undefined);
-    const [ isSelectedDomainConfigured, setIsSelectedDomainConfigured ] = useState<boolean>(false);
+    const [selectedDomain, setSelectedDomain] = useState<string>();
+    const [showDeleteConfig, setShowDeleteConfig] = useState<boolean>(false);
+    const [showDomainInput, setShowDomainInput] = useState<boolean>(false);
+    const [enteredDomain, setEnteredDomain] = useState<string>('');
+    const [matchState, setMatchState] = useState<MatchState | undefined>(undefined);
+    const [isSelectedDomainConfigured, setIsSelectedDomainConfigured] = useState<boolean>(false);
 
     /**
      *  Convenience variant of loadConfig()
@@ -120,11 +120,15 @@ export const DomainPicker: React.FC = () => {
      */
     useEffect(() => {
         const checkAndSelect = async () => {
-            const domainWithExistingConfig = storage.findDomainWithConfig ? await storage.findDomainWithConfig(context?.alternativeDomains || []) : undefined;
-            setSelectedDomain(domainWithExistingConfig || selectedDomain || context?.preferredDomain);
+            if (isPageDomain()) {
+                const domainWithExistingConfig = storage.findDomainWithConfig ? await storage.findDomainWithConfig(context?.alternativeDomains || []) : undefined;
+                setSelectedDomain(domainWithExistingConfig || selectedDomain || context?.preferredDomain);
+            } else {
+                setSelectedDomain(selectedDomain);
+            }
         };
         checkAndSelect();
-    }, [selectedDomain, context?.alternativeDomains, context?.preferredDomain, storage])
+    }, [selectedDomain, context?.alternativeDomains, context?.preferredDomain, storage, isPageDomain])
 
     /**
      *  Helper effect: if preferredDomain changes, force override selectedDomain, unless a non-page domain is selected.
@@ -135,7 +139,7 @@ export const DomainPicker: React.FC = () => {
                 setSelectedDomain(context?.preferredDomain);
         };
         checkPreferred();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [context?.preferredDomain]);
 
     /**
@@ -160,11 +164,11 @@ export const DomainPicker: React.FC = () => {
         <UIGroup title='Domain'>
             <div className={classes.wrapper}>
                 <div onMouseEnter={() => setShowDeleteConfig(true)} onMouseLeave={() => {
-                     if (matchState === MatchState.Match) {
+                    if (matchState === MatchState.Match) {
                         setSelectedDomain(enteredDomain);
-                     }
-                     setShowDomainInput(false); 
-                     setShowDeleteConfig(false);
+                    }
+                    setShowDomainInput(false);
+                    setShowDeleteConfig(false);
                 }}>
                     <div className={classes.selectorLine}>
                         <Select
@@ -176,7 +180,7 @@ export const DomainPicker: React.FC = () => {
                         />
                         <input type='button' value='🗁' disabled={!passwordContext?.derivationEntropy} className={classes.openButton} onClick={() => setShowDomainInput(true)}></input>
                     </div>
-                    { showDomainInput ? (
+                    {showDomainInput ? (
                         <div className={classes.selectorLine}>
                             <div className={classes.domainInputLabel}>
                                 <p>Domain:</p>
@@ -192,9 +196,9 @@ export const DomainPicker: React.FC = () => {
                                     }
                                 }}
                                 className={classes.domainInput}
-                                {...{state: matchState}}
+                                {...{ state: matchState }}
                             ></input>
-                            <div {...{state: matchState}} className={classes.domainInputStatusIcon}>{matchState ? MatchStateIcon[matchState] : ''}</div>
+                            <div {...{ state: matchState }} className={classes.domainInputStatusIcon}>{matchState ? MatchStateIcon[matchState] : ''}</div>
                         </div>
                     ) : (
                         <>
