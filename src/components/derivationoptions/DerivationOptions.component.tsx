@@ -102,7 +102,7 @@ export const DerivationOptions: React.FC = () => {
                 </Row>
                 {dirty && storage.currentDomainId && !storage.currentDomainConfig ? (
                     <Row>
-                        <RowHeader value='Legacy Derivation (SHA256):' />
+                        <RowHeader value='Use legacy SHA-2:' />
                         <div>
                             <input type='checkbox' checked={storage.useLegacyDerivation} onChange={e => storage.setLegacyDerivation?.(e.target.checked)} className={classes.checkbox} />
                         </div>
