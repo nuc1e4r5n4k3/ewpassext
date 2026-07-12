@@ -5,7 +5,7 @@ import NumericInput from 'react-numeric-input';
 import classes from './DerivationOptions.module.scss';
 import { getMaxPasswordSize } from '../../lib/derivation';
 import { UIGroup } from '../uiutils/UIGroup.component';
-import { StorageContext } from '../contexts/StorageContext.component';
+import { ConfigurationContext } from '../contexts/ConfigurationContext.component';
 import { IDomainConfig } from '../../lib/storage';
 
 
@@ -31,7 +31,7 @@ const objectsAreEqual = (object1: any, object2: any): boolean => {
 };
 
 export const DerivationOptions: React.FC = () => {
-    const storage = useContext(StorageContext);
+    const storage = useContext(ConfigurationContext);
     const [ maxPasswordSize, setMaxPasswordSize ] = useState<number>(32);
     const [ useSpecialCharacters, setUseSpecialCharacters ] = useState<boolean>(true);
     const [ allowExtraLongPasswords, setAllowExtraLongPasswords ] = useState<boolean>(false);
@@ -100,6 +100,14 @@ export const DerivationOptions: React.FC = () => {
                         <input type='checkbox' checked={allowExtraLongPasswords} disabled={!storage.currentDomainId} onChange={e => setAllowExtraLongPasswords(e.target.checked)} className={classes.checkbox} />
                     </div>
                 </Row>
+                {dirty && storage.currentDomainId && !storage.currentDomainConfig ? (
+                    <Row>
+                        <RowHeader value='Legacy Derivation (SHA256):' />
+                        <div>
+                            <input type='checkbox' checked={storage.useLegacyDerivation} onChange={e => storage.setLegacyDerivation?.(e.target.checked)} className={classes.checkbox} />
+                        </div>
+                    </Row>
+                ) : (<></>)}
             </div>
             {dirty && storage.currentDomainId ? (
                 <input type='button' value={storage.currentDomainConfig ? 'Update configration' : 'Create new password'} onClick={saveConfig} className={classes.updateButton}></input>

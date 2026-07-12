@@ -1,5 +1,6 @@
 import { runtime } from '../lib/browsercompat';
 import { on_chrome } from '../lib/browserdetect';
+import { MasterEntropy } from '../lib/derivation';
 import { GetDerivedPasswordRequest, GetDerivedPasswordResponse, GetPasswordHashRequest, GetPasswordHashResponse, OpenPopupRequest, OpenPopupResponse, Request, Response, StorePasswordHashRequest, StorePasswordHashResponse } from './types';
 
 
@@ -23,10 +24,10 @@ export const getPasswordHash = () =>
 export const getDerivedPassword = () => 
     sendRequest<GetDerivedPasswordRequest, GetDerivedPasswordResponse>({ type: 'getDerivedPassword' });
 
-export const storePasswordHash = (passwordHash: string|undefined, ttl?: number) =>
+export const storePasswordHash = (entropy: MasterEntropy|undefined, ttl?: number) =>
     sendRequest<StorePasswordHashRequest, StorePasswordHashResponse>({
         type: 'storePasswordHash',
-        passwordHash: passwordHash,
+        entropy: entropy,
         passwordHashTtl: ttl
     });
 

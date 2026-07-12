@@ -1,3 +1,4 @@
+import { MasterEntropy } from "../lib/derivation";
 
 export type MessageType = 'keepAlive'|'openPopup'|'getPasswordHash'|'storePasswordHash'|'getDerivedPassword';
 
@@ -18,7 +19,7 @@ export interface OpenPopupResponse extends Response {
 
 export interface StorePasswordHashRequest extends Request {
     type: 'storePasswordHash';
-    passwordHash: string|undefined;
+    entropy: MasterEntropy|undefined;
     passwordHashTtl?: number;
 };
 
@@ -32,7 +33,7 @@ export interface GetPasswordHashRequest extends Request {
 
 export interface GetPasswordHashResponse extends Response {
     type: 'getPasswordHash';
-    passwordHash: string|undefined;
+    entropy: MasterEntropy|undefined;
     expiresAt: number|undefined;
 };
 

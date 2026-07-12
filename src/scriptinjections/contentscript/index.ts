@@ -1,7 +1,5 @@
 import { getDerivedPassword, getPasswordHash, openExtensionPopup } from '../../internalapi/requests';
-import { derivePassword, getDomainId } from '../../lib/derivation';
 import { DocumentSearcher } from '../../lib/documentsearcher';
-import { IDomainConfig, load } from '../../lib/storage';
 import { getInjectionContext } from '../context';
 
 

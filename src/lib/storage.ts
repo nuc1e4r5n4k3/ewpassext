@@ -1,4 +1,4 @@
-import { getDomainId, hashPassword } from "./derivation";
+import { deriveMasterEntropy, getDomainIds } from "./derivation";
 import { storage } from "./browsercompat";
 
 export interface IDomainConfig {
@@ -109,11 +109,11 @@ export const importBackup = async (config: string, clearExisting: boolean = fals
 
 export const importLegacyBackup = async (config: LegacyBackup, password: string, clearExisting: boolean = false) => {
     const configs = await getConfigStore(clearExisting);
-    const passwordHash = hashPassword(password);
+    const masterEntropy = await deriveMasterEntropy(password);
 
     for (const domain in config) {
         const legacyConfig = config[domain];
-        const domainId = getDomainId(passwordHash, domain);
+        const { legacyId: domainId } = await getDomainIds(masterEntropy.legacyDerivationInput, masterEntropy.derivationInput, domain);
         const domainConfig: IDomainConfig = {
             passwordLength: legacyConfig[0],
             passwordIteration: legacyConfig[1],

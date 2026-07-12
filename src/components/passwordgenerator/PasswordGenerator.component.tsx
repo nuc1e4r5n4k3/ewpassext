@@ -3,40 +3,41 @@ import { derivePassword as doDerivePassword } from '../../lib/derivation';
 import { InjectionContextHolder } from '../../scriptinjections/context';
 import { PageContext } from '../contexts/PageContext.component';
 import { PasswordContext } from '../contexts/PasswordContext.component';
-import { StorageContext } from '../contexts/StorageContext.component';
+import { ConfigurationContext } from '../contexts/ConfigurationContext.component';
 import { UIGroup } from '../uiutils/UIGroup.component';
 import classes from './PasswordGenerator.module.scss';
 import { scripting } from '../../lib/browsercompat';
 
 
 export const PasswordGenerator: React.FC = () => {
-    const storage = useContext(StorageContext);
+    const storage = useContext(ConfigurationContext);
     const passwordContext = useContext(PasswordContext);
     const context = useContext(PageContext);
     const [ allowInjection, setAllowInjection ] = useState<boolean>(true);
     const copyButton = useRef<HTMLInputElement>(null);
     const injectButton = useRef<HTMLInputElement>(null);
 
-    const derivePassword = (): string|undefined => {
-        const hash = passwordContext?.hash;
+    const derivePassword = async (): Promise<string|undefined> => {
+        const entropy = passwordContext?.derivationEntropy;
         const domain = storage.currentDomain;
         const config = storage.currentDomainConfig;
+        const useLegacy = storage.useLegacyDerivation;
         
-        if (!hash || !domain || !config)
+        if (!entropy || !domain || !config)
             return undefined;
             
-        return doDerivePassword(hash, domain, config.passwordLength, config.passwordIteration, config.useSpecialCharacters, config.allowExtraLongPasswords);
+        return doDerivePassword(entropy, domain, config.passwordLength, config.passwordIteration, config.useSpecialCharacters, config.allowExtraLongPasswords, useLegacy);
     };
 
-    const copyPasswordToClipboard = () => {
-        const password = derivePassword();
+    const copyPasswordToClipboard = async () => {
+        const password = await derivePassword();
         if (!password) return;
 
         navigator.clipboard.writeText(password).then(() => window.close());
     };
 
     const injectPassword = async () => {
-        const password = derivePassword();
+        const password = await derivePassword();
         if (!password || !context) return;
 
         await scripting.executeScript({
@@ -65,11 +66,11 @@ export const PasswordGenerator: React.FC = () => {
     return storage.currentDomainConfig ? (
         <UIGroup title='Password generator'>
             <div>
-                <input ref={copyButton} type='button' value='Copy to clipboard' disabled={!passwordContext?.hash} autoFocus={!allowInjection} onClick={copyPasswordToClipboard} className={classes.button}></input>
+                <input ref={copyButton} type='button' value='Copy to clipboard' disabled={!passwordContext?.derivationEntropy} autoFocus={!allowInjection} onClick={copyPasswordToClipboard} className={classes.button}></input>
             </div>
             { allowInjection ? (
                 <div>
-                    <input ref={injectButton} type='button' value='Inject automatically' disabled={!passwordContext?.hash} autoFocus={true} onClick={injectPassword} className={classes.button}></input>
+                    <input ref={injectButton} type='button' value='Inject automatically' disabled={!passwordContext?.derivationEntropy} autoFocus={true} onClick={injectPassword} className={classes.button}></input>
                 </div>
             ) : (<></>)}
         </UIGroup>

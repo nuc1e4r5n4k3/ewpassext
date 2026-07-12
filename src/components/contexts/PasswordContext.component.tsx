@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { getPasswordHash, storePasswordHash as doStorePasswordHash } from '../../internalapi/requests';
-import { hashPassword } from '../../lib/derivation';
-import { StorageContext } from './StorageContext.component';
+import { deriveMasterEntropy, MasterEntropy } from '../../lib/derivation';
+import { PasswordChecksumContext } from './PasswordChecksumContext.component';
 
 
 export interface IPasswordContext {
-    hash?: string;
+    derivationEntropy?: MasterEntropy;
     expiresAt?: number;
     correct: boolean;
     set: (password: string) => void;
@@ -20,50 +20,50 @@ const matchesChecksum = (passwordHash?: string, checksum?: string): boolean => {
     return checksum === undefined || passwordHash?.substr(0, 2) === checksum;
 };
 
-const storePasswordHash = async (passwordHash: string|undefined) => {
-    await doStorePasswordHash(passwordHash, passwordHash ? PASSWORD_TTL : undefined);
+const storePasswordHash = async (derivationEntropy?: MasterEntropy) => {
+    await doStorePasswordHash(derivationEntropy, derivationEntropy ? PASSWORD_TTL : undefined);
 };
 
 type Props = {
     children: any;
 };
 export const PasswordContextProvider: React.FC<Props> = ({children}) => {
-    const storage = useContext(StorageContext);
-    const [ passwordHash, setPasswordHash ] = useState<string>();
+    const checksum = useContext(PasswordChecksumContext);
+    const [ derivationEntropy, setDerivationEntropy ] = useState<MasterEntropy|undefined>();
     const [ passwordExpires, setPasswordExpiresAt ] = useState<number|undefined>();
     const [ isInitial, setInitial ] = useState<boolean>(true);
 
-    const setPassword = (password: string) => {
+    const setPassword = async (password: string) => {
         if (password.length === 0) {
             return;
         }
 
-        let hash = hashPassword(password);
-        setPasswordHash(hash);
+        const entropy = await deriveMasterEntropy(password);
+        setDerivationEntropy(entropy);
         
-        if (matchesChecksum(hash, storage.passwordChecksum)) {
-            storePasswordHash(hash);
+        if (matchesChecksum(entropy.legacyDerivationInput, checksum?.passwordChecksum)) {
+            storePasswordHash(entropy);
         }
     };
 
     useEffect(() => {
-        if (isInitial && passwordHash === undefined) {
+        if (isInitial && derivationEntropy === undefined) {
             getPasswordHash().then(response => {
-                setPasswordHash(response.passwordHash || undefined);
+                setDerivationEntropy(response.entropy);
                 setPasswordExpiresAt(response.expiresAt);
                 setInitial(false);
             });
         }
-    }, [isInitial, passwordHash]);
+    }, [isInitial, derivationEntropy]);
 
     return (
         <PasswordContext.Provider value={{
-            hash: passwordHash,
+            derivationEntropy: derivationEntropy,
             expiresAt: passwordExpires,
             set: setPassword,
-            correct: matchesChecksum(passwordHash, storage.passwordChecksum),
+            correct: matchesChecksum(derivationEntropy?.legacyDerivationInput, checksum?.passwordChecksum),
             clear: () => {
-                setPasswordHash(undefined);
+                setDerivationEntropy(undefined);
                 setPasswordExpiresAt(undefined);
                 storePasswordHash(undefined);
             }
