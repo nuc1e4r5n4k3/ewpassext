@@ -120,14 +120,11 @@ export const DomainPicker: React.FC = () => {
      */
     useEffect(() => {
         const checkAndSelect = async () => {
-            if (selectedDomain && await domainHasConfig())
-                return;
-
-            const found = storage.findDomainWithConfig ? await storage.findDomainWithConfig(context?.alternativeDomains || []) : undefined;
-            setSelectedDomain(found || context?.preferredDomain);
+            const domainWithExistingConfig = storage.findDomainWithConfig ? await storage.findDomainWithConfig(context?.alternativeDomains || []) : undefined;
+            setSelectedDomain(domainWithExistingConfig || selectedDomain || context?.preferredDomain);
         };
         checkAndSelect();
-    }, [selectedDomain, context?.alternativeDomains, context?.preferredDomain, domainHasConfig, isPageDomain, storage])
+    }, [selectedDomain, context?.alternativeDomains, context?.preferredDomain, storage])
 
     /**
      *  Helper effect: if preferredDomain changes, force override selectedDomain, unless a non-page domain is selected.

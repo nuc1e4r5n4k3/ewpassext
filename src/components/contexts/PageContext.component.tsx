@@ -73,9 +73,9 @@ export const PageContextProvider: React.FC<Props> = ({children}) => {
     }, [alternativeDomains]);
 
     return (
-        <PageContext.Provider value={tabId && fullDomain ? {
+        <PageContext.Provider value={tabId && fullDomain && preferredDomain ? {
             tabId: tabId,
-            preferredDomain: preferredDomain || fullDomain,
+            preferredDomain: preferredDomain,
             alternativeDomains: alternativeDomains
         } : undefined}>
             {children}

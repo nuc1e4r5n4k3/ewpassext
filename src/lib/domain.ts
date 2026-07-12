@@ -5,8 +5,6 @@ const isValidDomain = (domain: string) => {
         return true;
     if (parts.length < 2)
         return false;
-    if (parts[0].length <= 2)   /* i.e. .co.uk */
-        return false;
     return true;
 };
 
