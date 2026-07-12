@@ -33,7 +33,7 @@ type Props = {
 };
 export const ConfigurationContextProvider: React.FC<Props> = ({ children }) => {
     const passwordContext = useContext(PasswordContext);
-    const [domainConfigs, setDomainConfigs] = useState<Configuration>({});
+    const [domainConfigs, setDomainConfigs] = useState<Configuration>();
     const [currentDomain, setCurrentDomain] = useState<string | undefined>(undefined);
     const [currentDomainId, setCurrentDomainId] = useState<string | undefined>(undefined);
     const [currentDomainConfig, setCurrentDomainConfig] = useState<IDomainConfig | undefined>(undefined);
@@ -57,11 +57,9 @@ export const ConfigurationContextProvider: React.FC<Props> = ({ children }) => {
 
     useEffect(() => {
         (async () => {
-            if (Object.keys(domainConfigs).length === 0) {
+            if (domainConfigs === undefined) {
                 const loaded = await load<Configuration>('metadata') || {};
-                if (Object.keys(loaded).length > 0) {
-                    setDomainConfigs(loaded);
-                }
+                setDomainConfigs(loaded);
             } else {
                 await store('metadata', domainConfigs);
             }
@@ -77,7 +75,7 @@ export const ConfigurationContextProvider: React.FC<Props> = ({ children }) => {
             }
 
             const ids = await getDomainIds(passwordContext.derivationEntropy, currentDomain);
-            if (stale) return;
+            if (stale || domainConfigs === undefined) return;
 
             if (ids.legacyId in domainConfigs) {
                 setLegacyDerivation(true);
@@ -93,11 +91,12 @@ export const ConfigurationContextProvider: React.FC<Props> = ({ children }) => {
     }, [currentDomain, passwordContext?.derivationEntropy, domainConfigs, useLegacyDerivation]);
 
     useEffect(() => {
-        setCurrentDomainConfig(currentDomainId && currentDomainId in domainConfigs ? domainConfigs[currentDomainId] : undefined);
+        setCurrentDomainConfig(currentDomainId && domainConfigs && currentDomainId in domainConfigs ? domainConfigs[currentDomainId] : undefined);
     }, [currentDomainId, domainConfigs]);
 
     const findDomainWithConfig = async (domains: string[]): Promise<string | undefined> => {
         if (!passwordContext?.derivationEntropy) return undefined;
+        if (!domainConfigs) return undefined;
 
         for (const domain of domains) {
             const ids = await getDomainIds(passwordContext.derivationEntropy, domain);
@@ -112,7 +111,7 @@ export const ConfigurationContextProvider: React.FC<Props> = ({ children }) => {
         if (!passwordContext?.derivationEntropy) return false;
 
         const ids = await getDomainIds(passwordContext.derivationEntropy, domain);
-        return ids.legacyId in domainConfigs || ids.id in domainConfigs;
+        return !!domainConfigs && (ids.legacyId in domainConfigs || ids.id in domainConfigs);
     };
 
     const importConfigurations = async (config: string, clearExisting: boolean): Promise<number> => {

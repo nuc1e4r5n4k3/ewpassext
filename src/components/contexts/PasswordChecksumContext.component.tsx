@@ -14,8 +14,8 @@ export const PasswordChecksumContext = createContext<IPasswordChecksumContext>({
 type Props = {
     children: any;
 };
-export const PasswordChecksumProvider: React.FC<Props> = ({children}) => {
-    const [ passwordChecksum, setPasswordChecksum ] = useState<string|null|undefined>(null);
+export const PasswordChecksumProvider: React.FC<Props> = ({ children }) => {
+    const [passwordChecksum, setPasswordChecksum] = useState<string | null | undefined>(null);
 
     useEffect(() => {
         (async () => {
@@ -30,7 +30,7 @@ export const PasswordChecksumProvider: React.FC<Props> = ({children}) => {
     return (
         <PasswordChecksumContext.Provider value={{
             passwordChecksum: passwordChecksum || undefined,
-            setPasswordChecksum: setPasswordChecksum
+            setPasswordChecksum: passwordChecksum !== null ? setPasswordChecksum : undefined
         }}>
             {children}
         </PasswordChecksumContext.Provider>
