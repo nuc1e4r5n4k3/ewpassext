@@ -10,21 +10,35 @@
     text-transform: uppercase;
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
+    color: #475569;
 }
 
 .status {
     display: inline-block;
     font-size: 150%;
-    height: 24px;
 }
 
 .buttonWrapper {
     display: inline-block;
-    height: 24px;
     vertical-align: middle;
     margin: 0px 10px;
+
+    input {
+        height: 24px;
+    }
 }
 
 .clear {
     margin-left: 10px;
+    background-color: #e2e8f0;
+    color: #1e293b;
+    border: none;
+    border-radius: 6px;
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+        background-color: #cbd5e1;
+    }
 }

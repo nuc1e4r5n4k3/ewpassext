@@ -11,10 +11,11 @@ const getCurrentTime = () => Math.floor(new Date().getTime() / 1000);
 export const MasterPassword: React.FC = () => {
     const passwordContext = useContext(PasswordContext);
     const checksumContext = useContext(PasswordChecksumContext);
-    const [ currentPassword, updateCurrentPassword ] = useState<string>();
-    const [ now, setCurrentTime ] = useState<number>(getCurrentTime());
-    const [ passwordClearTime, setPasswordClearTime ] = useState<number>();
-    const [ passwordTtl, setPasswordTtl ] = useState<number>();
+    const [checksumHasFocus, setChecksumHasFocus] = useState<boolean>(false);
+    const [currentPassword, updateCurrentPassword] = useState<string>();
+    const [now, setCurrentTime] = useState<number>(getCurrentTime());
+    const [passwordClearTime, setPasswordClearTime] = useState<number>();
+    const [passwordTtl, setPasswordTtl] = useState<number>();
     const passwordInput = useRef<HTMLInputElement>(null);
     const clearButton = useRef<HTMLInputElement>(null);
 
@@ -69,14 +70,14 @@ export const MasterPassword: React.FC = () => {
                 className={classes.input}
             ></input>
             {haveEntropy ? (
-                <div className={classes.checksumWrapper}>
+                <div className={classes.checksumWrapper} onMouseEnter={() => setChecksumHasFocus(true)} onMouseLeave={() => setChecksumHasFocus(false)}>
                     <div className={classes.checksum}>Checksum:</div>
-                    <Checksum value={checksum} expected={checksumContext?.passwordChecksum} setCurrentChecksum={checksumContext?.setPasswordChecksum} />
+                    <Checksum value={checksum} expected={checksumContext?.passwordChecksum} setCurrentChecksum={checksumContext?.setPasswordChecksum} hasFocus={checksumHasFocus} />
                 </div>
             ) : (<></>)}
             {passwordTtl !== undefined ? (
                 <div className={classes.autoclear}>
-                    Auto-clearing in {passwordTtl} seconds... 
+                    Auto-clearing in {passwordTtl} seconds...
                     <input
                         type='button'
                         value='Clear'

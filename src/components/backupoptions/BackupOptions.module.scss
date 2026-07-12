@@ -18,4 +18,14 @@
     height: 30px;
     width: 200px;
     font-size: 110%;
+    background-color: #64748b;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+        background-color: #475569;
+    }
 }

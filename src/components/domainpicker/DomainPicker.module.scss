@@ -19,12 +19,21 @@
 }
 
 .openButton {
-    margin: 3px;
+    margin: 2px 2px 2px 8px;
     width: auto;
     height: auto;
     font-size: 110%;
     font-weight: bold;
     text-align: center;
+    background-color: #e2e8f0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+        background-color: #cbd5e1;
+    }
 }
 
 .domainInputLabel {
@@ -45,16 +54,24 @@
     width: 100%;
     height: 20px;
     padding-left: 10px;
+    border: 1px solid #cbd5e1;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+    }
 }
 
 .domainInput[state=match] {
-    background-color: rgb(144, 255, 144);
-    border-color: rgb(0, 128, 0);
+    background-color: #dcfce7;
+    border-color: #22c55e;
 }
 
 .domainInput[state=nomatch] {
-    background-color: rgb(255, 144, 144);
-    border-color: rgb(128, 0, 0);
+    background-color: #fee2e2;
+    border-color: #ef4444;
 }
 
 .domainInputStatusIcon {
@@ -63,7 +80,7 @@
     margin-right: 10px;
     width: 30px;
     height: 100%;
-    font-size: 130%;
+    font-size: 100%;
     font-weight: bold;
     text-align: center;
     vertical-align: middle;
@@ -89,4 +106,14 @@
     width: 180px;
     height: 100%;
     font-size: 110%;
+    background-color: #ef4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+        background-color: #dc2626;
+    }
 }
