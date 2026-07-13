@@ -5,8 +5,9 @@ Chrome/Firefox extension that derives website-specific passwords from a single m
 ## Build
 
 ```
-pnpm build              # Chromium (main) -- runs vite build + vite build for script injections
+pnpm build              # Chromium (main) -- runs tsc --noEmit && vite build + vite build for script injections
 pnpm build-firefox      # Firefox patch + xpi pack
+pnpm typecheck          # tsc --noEmit (standalone, also runs as part of build)
 ```
 
 **Main popup** is a React app built by `vite build` → `build/index.html`, `build/static/js/[name]-[hash].js`.
