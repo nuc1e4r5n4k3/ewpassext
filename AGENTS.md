@@ -63,6 +63,12 @@ Core logic lives in `src/lib/derivation.ts`. The master password is expanded int
 
 A legacy derivation path (plain SHA-256) is retained alongside the modern KDFs so existing site-specific passwords keep working when `legacyDerivation` is set. `deriveMasterEntropy` / `getDomainIds` return both modern and legacy inputs for this reason.
 
+The two paths use different character-mapping strategies:
+- **Modern** (`derivePasswordModern`): requests `size * 4` bytes from HKDF in a single call, then maps each character via **partial rejection sampling** on 16-bit values — the first 16-bit value is checked against a modulo-bias threshold; if it falls in the rejection range, the second 16-bit value is used with plain modulo (the probability of both being biased is negligible). This is unbiased for all practical purposes and supports passwords up to `MAX_MODERN_PASSWORD_SIZE` (64). The `allowExtraLongPasswords` flag is **ignored** by the modern path.
+- **Legacy**: extracts characters from a fixed 256-bit SHA-256 hash via `calcRounds` (repeated `x % map.length` division). Without `allowExtraLongPasswords`, extraction stops when the remaining value drops below the map length (avoiding modulo bias but capping length at `getMaxPasswordSize`); with it enabled, extraction continues past that point, accepting modulo bias in the trailing characters to allow longer passwords.
+
+The `Long passwords` toggle in the UI (`DerivationOptions`) is shown only when the current domain uses legacy derivation (`useLegacyDerivation` is true). New (modern) configs always write `allowExtraLongPasswords: false`; the field is retained in `IDomainConfig` and the backup serialization format for compatibility with existing legacy configs and backups.
+
 ## Extension privileges
 
 The manifest (`public/manifest.json`) requests the following permissions and host permissions. Each is listed with the code that consumes it.

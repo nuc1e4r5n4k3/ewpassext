@@ -3,7 +3,7 @@ import { Row } from '../uiutils/Row.component';
 import { RowHeader } from '../uiutils/RowHeader.component';
 import NumericInput from 'react-numeric-input';
 import classes from './DerivationOptions.module.scss';
-import { getMaxPasswordSize } from '../../lib/derivation';
+import { getMaxPasswordSizeLegacy, MAX_PASSWORD_SIZE_MODERN } from '../../lib/derivation';
 import { UIGroup } from '../uiutils/UIGroup.component';
 import { ConfigurationContext } from '../contexts/ConfigurationContext.component';
 import { IDomainConfig } from '../../lib/storage';
@@ -38,6 +38,7 @@ export const DerivationOptions: React.FC<Props> = ({ showBackupOptions }) => {
     const storage = useContext(ConfigurationContext);
     const [maxPasswordSize, setMaxPasswordSize] = useState<number>(32);
     const [useSpecialCharacters, setUseSpecialCharacters] = useState<boolean>(true);
+    const [useLegacyDerivation, setUseLegacyDerivation] = useState<boolean>(false);
     const [allowExtraLongPasswords, setAllowExtraLongPasswords] = useState<boolean>(false);
     const [passwordSize, setPasswordSize] = useState<number>(16);
     const [iteration, setIteration] = useState<number>(1);
@@ -50,11 +51,15 @@ export const DerivationOptions: React.FC<Props> = ({ showBackupOptions }) => {
     };
 
     useEffect(() => {
-        const maxSize = getMaxPasswordSize(useSpecialCharacters, allowExtraLongPasswords);
+        setUseLegacyDerivation(storage.useLegacyDerivation);
+    }, [storage.useLegacyDerivation]);
+
+    useEffect(() => {
+        const maxSize = useLegacyDerivation ? getMaxPasswordSizeLegacy(useSpecialCharacters, allowExtraLongPasswords) : MAX_PASSWORD_SIZE_MODERN;
         setMaxPasswordSize(maxSize);
         if (passwordSize > maxSize)
             setPasswordSize(maxSize);
-    }, [useSpecialCharacters, allowExtraLongPasswords]);
+    }, [useLegacyDerivation, useSpecialCharacters, allowExtraLongPasswords]);
 
     useEffect(() => {
         const newConfig = makeConfig(passwordSize, iteration, useSpecialCharacters, allowExtraLongPasswords);
@@ -99,12 +104,14 @@ export const DerivationOptions: React.FC<Props> = ({ showBackupOptions }) => {
                         <input type='checkbox' checked={useSpecialCharacters} disabled={!storage.currentDomainId} onChange={e => setUseSpecialCharacters(e.target.checked)} className={classes.checkbox} />
                     </div>
                 </Row>
-                <Row>
-                    <RowHeader value='Long passwords:' />
-                    <div>
-                        <input type='checkbox' checked={allowExtraLongPasswords} disabled={!storage.currentDomainId} onChange={e => setAllowExtraLongPasswords(e.target.checked)} className={classes.checkbox} />
-                    </div>
-                </Row>
+                {useLegacyDerivation ? (
+                    <Row>
+                        <RowHeader value='Long passwords:' />
+                        <div>
+                            <input type='checkbox' checked={allowExtraLongPasswords} disabled={!storage.currentDomainId} onChange={e => setAllowExtraLongPasswords(e.target.checked)} className={classes.checkbox} />
+                        </div>
+                    </Row>
+                ) : (<></>)}
                 {dirty && storage.currentDomainId && !storage.currentDomainConfig ? (
                     <Row>
                         <RowHeader value='Use legacy SHA-2:' />
