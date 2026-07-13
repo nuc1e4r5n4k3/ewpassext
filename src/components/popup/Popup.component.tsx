@@ -10,6 +10,9 @@ import { PasswordGenerator } from '../passwordgenerator/PasswordGenerator.compon
 import { useState, useRef, useEffect, useContext } from 'react';
 import { BackupOptions } from '../backupoptions/BackupOptions.component';
 import { UIGroup } from '../uiutils/UIGroup.component';
+import { Permissions, permissions } from '../../lib/browsercompat';
+
+const CLIPBOARD_PERMISSION: Permissions = { permissions: ['clipboardRead'] };
 
 
 const PopupComponent: React.FC = () => {
@@ -18,7 +21,8 @@ const PopupComponent: React.FC = () => {
     const [showBackupOptions, setShowBackupOptions] = useState<boolean>(false);
     const pageBottomRef = useRef<HTMLDivElement>(null);
 
-    const showBackupOptionsTrigger = () => {
+    const showBackupOptionsTrigger = async () => {
+        await permissions.request(CLIPBOARD_PERMISSION);
         setShowBackupOptions(true);
         setTimeout(() => pageBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 20);
     };

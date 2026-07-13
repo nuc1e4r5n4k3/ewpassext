@@ -12,10 +12,12 @@
     "permissions": [
         "activeTab",
         "alarms",
-        "clipboardRead",
         "scripting",
         "storage",
         "webNavigation"
+    ],
+    "optional_permissions": [
+        "clipboardRead"
     ],
     "action": {
          "title": "E. W. Password Generator - Chromium Extension Edition",

@@ -5,16 +5,21 @@ import { UIGroup } from '../uiutils/UIGroup.component';
 import { Row } from '../uiutils/Row.component';
 import { RowHeader } from '../uiutils/RowHeader.component';
 import { preParseBackup } from '../../lib/storage';
+import { Permissions, permissions } from '../../lib/browsercompat';
+
+const CLIPBOARD_PERMISSION: Permissions = { permissions: ['clipboardRead'] };
+
 
 export const BackupOptions: React.FC = () => {
     const storage = useContext(ConfigurationContext);
-    const [clipboardText, setClipboardText] = useState<string>();
+    const [clipboardText, setClipboardText] = useState<string | null>();
     const [importText, setImportText] = useState<string>();
     const [backupConfigurations, setBackupConfigurations] = useState<number>();
+    const [importStatus, setImportStatus] = useState<string>('Checking...');
     const [overwriteExisting, setOverwriteExisting] = useState<boolean>(false);
 
     useEffect(() => {
-        if (clipboardText === undefined) {
+        if (clipboardText === undefined || clipboardText === null) {
             setBackupConfigurations(undefined);
             setImportText(undefined);
         } else {
@@ -26,10 +31,33 @@ export const BackupOptions: React.FC = () => {
     }, [clipboardText])
 
     useEffect(() => {
-        (async () => {
-            setClipboardText(await navigator.clipboard.readText());
-        })();
+        const readClipboardIfAllowed = async () => {
+            if (await permissions.contains(CLIPBOARD_PERMISSION)) {
+                try {
+                    setClipboardText(await navigator.clipboard.readText());
+                } catch {
+                    setClipboardText(null);
+                }
+            } else {
+                setClipboardText(null);
+            }
+        };
+        readClipboardIfAllowed();
     }, [])
+
+    useEffect(() => {
+        const getStatusLine = () => {
+            if (!storage.importConfigurations) return 'Storage layer not ready';
+            if (clipboardText === undefined) return 'Waiting...';
+            if (clipboardText === null) return 'Missing permission';
+            if (backupConfigurations === undefined) {
+                if (clipboardText) return 'Clipboard data invalid';
+                return 'Clipboard empty';
+            }
+            return 'Ready to import';
+        };
+        setImportStatus(getStatusLine());
+    }, [backupConfigurations, clipboardText]);
 
     const exportConfig = async () => {
         if (!storage.exportConfigurations) {
@@ -66,7 +94,7 @@ export const BackupOptions: React.FC = () => {
                 </Row>
                 <Row>
                     <RowHeader value='Import status:' />
-                    {backupConfigurations !== undefined ? (storage.importConfigurations ? <>Ready to import</> : <>Storage layer not ready</>) : clipboardText ? <>Clipboard data invalid</> : <>Clipboard empty</>}
+                    <>{importStatus}</>
                 </Row>
                 {backupConfigurations !== undefined ?
                     <Row>

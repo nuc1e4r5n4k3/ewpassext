@@ -79,7 +79,6 @@ The manifest (`public/manifest.json`) requests the following permissions and hos
 
 - **`activeTab`** — Grants temporary access to the currently active tab when the user invokes the popup. Consumed via `browser.tabs.query({ windowId: ..., active: true })` in `src/components/contexts/PageContext.component.tsx:10` to read the active tab's `id` and `url`, which the popup then uses to derive the domain-specific password and target injection.
 - **`alarms`** — Used in `src/serviceworker/storage.ts` to expire the in-memory master-password entropy. `alarms.create(CLEAR_PASSWORD_ALARM, { delayInMinutes: ... })` at line 40 schedules a delayed wipe; `alarms.onAlarm` at line 23 fires the wipe when the alarm elapses, ensuring derived entropy isn't kept in session storage beyond the user-requested TTL.
-- **`clipboardRead`** — Backs `navigator.clipboard.readText()` in `src/components/backupoptions/BackupOptions.component.tsx:30`, which reads a serialized configuration backup string off the clipboard for parsing/import. (Clipboard *writes* via `navigator.clipboard.writeText()` in the same file at line 45 and in `src/components/passwordgenerator/PasswordGenerator.component.tsx:36` are user-gesture-initiated and don't require a declared permission.)
 - **`scripting`** — Backs `scripting.executeScript`, which injects `contentscript.js` and invokes the injected `injectPassword` function on the page. Two call sites:
   - `src/serviceworker/index.ts:11` — auto-injects the content script into the tab whenever a top-level `https://` navigation completes (driven by `webNavigation.onCompleted` above it).
   - `src/components/passwordgenerator/PasswordGenerator.component.tsx:43,47` — when the user clicks "Inject automatically", the popup injects `contentscript.js` into the active tab and then calls `(window as InjectionContextHolder).ewpassext!.injectPassword!(password)`.
@@ -93,6 +92,10 @@ The manifest (`public/manifest.json`) requests the following permissions and hos
 ### `host_permissions`
 
 - **`https://*/*`** — Required so the `scripting.executeScript` calls above can inject `contentscript.js` and run `injectPassword` on any HTTPS page. Also gates `activeTab` access to the URL of the active HTTPS tab.
+
+### `optional_permissions`
+
+- **`clipboardRead`** — Requested on-demand, inside the user gesture fired when the user clicks the "backup options" link in `src/components/derivationoptions/DerivationOptions.component.tsx`. The click handler `showBackupOptionsTrigger` in `src/components/popup/Popup.component.tsx` calls `permissions.request({ permissions: ['clipboardRead'] })` (via the `permissions` accessor in `src/lib/browsercompat.ts`) before opening the `BackupOptions` panel. Once granted, it backs `navigator.clipboard.readText()` in `src/components/backupoptions/BackupOptions.component.tsx`, which reads a serialized configuration backup string off the clipboard for parsing/import. If the user denies the prompt (or revokes the permission later), the `BackupOptions` "Import status:" row shows `Clipboard permission not granted — click "backup options" again to enable` and the "Import from Clipboard" button stays disabled. (Clipboard *writes* via `navigator.clipboard.writeText()` in the same file and in `src/components/passwordgenerator/PasswordGenerator.component.tsx` are user-gesture-initiated and don't require a declared permission.)
 
 ## Style & conventions
 

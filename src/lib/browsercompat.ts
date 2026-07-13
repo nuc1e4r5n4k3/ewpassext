@@ -2,6 +2,7 @@ import { on_chrome } from "./browserdetect";
 
 export const action =       (on_chrome ? chrome.action       : browser.action)       as typeof chrome.action;
 export const alarms =       (on_chrome ? chrome.alarms       : browser.alarms)       as typeof chrome.alarms;
+export const permissions =  (on_chrome ? chrome.permissions  : browser.permissions)  as typeof chrome.permissions;
 export const storage =      (on_chrome ? chrome.storage      : browser.storage)      as typeof chrome.storage;
 export const runtime =      (on_chrome ? chrome.runtime      : browser.runtime)      as typeof chrome.runtime;
 export const scripting =    (on_chrome ? chrome.scripting    : browser.scripting)    as typeof chrome.scripting;
@@ -9,9 +10,12 @@ export const tabs =         (on_chrome ? chrome.tabs         : browser.tabs)    
 export const webNavigation =(on_chrome ? chrome.webNavigation: browser.webNavigation)as typeof chrome.webNavigation;
 export const windows =      (on_chrome ? chrome.windows      : browser.windows)      as typeof chrome.windows;
 
+export type Permissions = chrome.permissions.Permissions;
+
 const _everything = {
     'action': action,
     'alarms': alarms,
+    'permissions': permissions,
     'storage': storage,
     'runtime': runtime,
     'scripting': scripting,
