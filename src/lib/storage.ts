@@ -119,7 +119,7 @@ export const importLegacyBackup = async (config: LegacyBackup, password: string,
 
     for (const domain in config) {
         const legacyConfig = config[domain];
-        const { legacyId: domainId } = await getDomainIds(masterEntropy.legacyDerivationInput, masterEntropy.derivationInput, domain);
+        const { legacyId: domainId } = await getDomainIds(masterEntropy, domain);
         const domainConfig: IDomainConfig = {
             passwordLength: legacyConfig[0],
             passwordIteration: legacyConfig[1],
