@@ -46,7 +46,7 @@ export const DerivationOptions: React.FC<Props> = ({ showBackupOptions }) => {
 
     const saveConfig = () => {
         if (storage.setConfigForCurrentDomain) {
-            storage.setConfigForCurrentDomain(makeConfig(passwordSize, iteration, useSpecialCharacters, allowExtraLongPasswords));
+            storage.setConfigForCurrentDomain(makeConfig(passwordSize, iteration, useSpecialCharacters, useLegacyDerivation ? allowExtraLongPasswords : false));
         }
     };
 
