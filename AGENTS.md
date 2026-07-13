@@ -38,7 +38,9 @@ This patches `build/manifest.json` via `firefox/manifest.json.patch`, then zips 
 pnpm test           # vitest (watch mode)
 ```
 
-No existing test files, but `@testing-library/*` deps are present. Vitest is configured in `vite.config.ts` (`test.environment: 'happy-dom'`). Add `.test.tsx` alongside components.
+Vitest is configured in `vite.config.ts` (`test.environment: 'happy-dom'`). `@testing-library/*` deps are present. Add `.test.tsx` alongside components.
+
+`src/lib/derivation.test.ts` covers both derivation paths: golden-value tests for the legacy path (4 combinations of special-chars/extra-long) and the modern path (golden values, determinism, length, charset membership, flag-ignoring, bias sanity).
 
 ## Code structure
 
