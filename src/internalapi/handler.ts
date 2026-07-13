@@ -1,4 +1,4 @@
-import { EXTENSION_INTERNAL_ID, EXTENSION_URL } from "./requests";
+import { runtime } from "../lib/browsercompat";
 import { MessageType, Request, Response } from "./types";
 
 export enum TrustLevel {
@@ -6,6 +6,10 @@ export enum TrustLevel {
     ExtensionContext,
     FromExtension
 };
+
+const EXTENSION_INTERNAL_ID = runtime.id;
+const EXTENSION_URL = runtime.getURL('').replace(/\/$/, '');
+
 
 type Handlers = { [key: string]: [(request: Request, origin?: string) => Promise<Response>, TrustLevel] };
 let handlers: Handlers = {};
