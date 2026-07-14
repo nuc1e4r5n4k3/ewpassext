@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "E. W. Password Generator - Chromium Extension Edition",
+    "name": "E. W. Password Generator",
     "short_name": "ewpassext",
-    "description": "Extension that allows for semi-automated website specific password derivation based on a single master password",
+    "description": "Extension that allows stateless, website-specific password derivation based on a single master password",
     "version": "1.4.0",
     "icons": {
         "16": "icon16.png",
