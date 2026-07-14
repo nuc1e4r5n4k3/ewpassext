@@ -63,14 +63,23 @@ export const PasswordGenerator: React.FC = () => {
             copyButton.current?.focus();
     }, [allowInjection])
 
+    const onButtonKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        const isCopy = event.currentTarget === copyButton.current;
+        if (isCopy && event.key === 'ArrowDown' && allowInjection) {
+            injectButton.current?.focus();
+        } else if (!isCopy && event.key === 'ArrowUp') {
+            copyButton.current?.focus();
+        }
+    };
+
     return storage.currentDomainConfig ? (
         <UIGroup title='Password generator'>
             <div>
-                <input ref={copyButton} type='button' value='Copy to clipboard' disabled={!passwordContext?.derivationEntropy} autoFocus={!allowInjection} onClick={copyPasswordToClipboard} className={classes.button}></input>
+                <input ref={copyButton} type='button' value='Copy to clipboard' disabled={!passwordContext?.derivationEntropy} autoFocus={!allowInjection} onClick={copyPasswordToClipboard} onKeyDown={onButtonKeyDown} className={classes.button}></input>
             </div>
-            { allowInjection ? (
+            {allowInjection ? (
                 <div>
-                    <input ref={injectButton} type='button' value='Inject automatically' disabled={!passwordContext?.derivationEntropy} autoFocus={true} onClick={injectPassword} className={classes.button}></input>
+                    <input ref={injectButton} type='button' value='Inject automatically' disabled={!passwordContext?.derivationEntropy} autoFocus={true} onClick={injectPassword} onKeyDown={onButtonKeyDown} className={classes.button}></input>
                 </div>
             ) : (<></>)}
         </UIGroup>
