@@ -160,13 +160,20 @@ export const DomainPicker: React.FC = () => {
         checkConfig();
     }, [domainHasConfig]);
 
+    const trySelectCustomDomain = useCallback((): boolean => {
+        if (enteredDomain && matchState === MatchState.Match) {
+            setSelectedDomain(enteredDomain);
+            setShowDomainInput(false);
+            return true;
+        }
+        return false;
+    }, [enteredDomain, matchState]);
+
     return (
         <UIGroup title='Domain'>
             <div className={classes.wrapper}>
                 <div onMouseEnter={() => setShowDeleteConfig(true)} onMouseLeave={() => {
-                    if (matchState === MatchState.Match) {
-                        setSelectedDomain(enteredDomain);
-                    }
+                    trySelectCustomDomain();
                     setShowDomainInput(false);
                     setShowDeleteConfig(false);
                 }}>
@@ -188,10 +195,10 @@ export const DomainPicker: React.FC = () => {
                             <input
                                 autoFocus={true}
                                 onChange={e => setEnteredDomain(e.target.value)}
-                                onKeyDown={e => {
-                                    if (enteredDomain && matchState === MatchState.Match && e.key === 'Enter') {
-                                        setSelectedDomain(enteredDomain);
-                                        setShowDomainInput(false);
+                                onBlur={trySelectCustomDomain}
+                                onKeyUp={e => {
+                                    if (e.key === 'Enter') {
+                                        trySelectCustomDomain();
                                         e.stopPropagation();
                                     }
                                 }}
@@ -211,6 +218,6 @@ export const DomainPicker: React.FC = () => {
                     )}
                 </div>
             </div>
-        </UIGroup>
+        </UIGroup >
     );
 }
