@@ -103,3 +103,7 @@ The manifest (`public/manifest.json`) requests the following permissions and hos
 - Strict TypeScript (`strict: true`). JSX transforms via `react-jsx`.
 - Component files use `.component.tsx` + `.module.scss` pairing.
 - `pnpm` for package management -- check `pnpm-workspace.yaml`.
+
+## Documentation
+
+`README.md` (user manual, technical reference, developer guide), `AGENTS.md` (this file, agent-oriented project map), and `doc/submission-requirements/privacy-policy.md` (AMO/CWS submission privacy policy) describe the extension's behaviour, permissions, and derivation algorithm in prose. When a change touches any of these areas -- derivation parameters, permission model, storage layout, build outputs, feature set -- check all three documents for staleness and update them in the same commit. The privacy policy is only required when the change is user-facing or affects data handling; internal refactors that leave observable behaviour unchanged do not require a privacy-policy edit.
