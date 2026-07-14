@@ -3,7 +3,7 @@
     "name": "E. W. Password Generator",
     "short_name": "ewpassext",
     "description": "Extension that allows stateless, website-specific password derivation based on a single master password",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "icons": {
         "16": "icon16.png",
         "48": "icon48.png"
