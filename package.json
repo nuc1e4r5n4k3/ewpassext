@@ -28,7 +28,8 @@
         "start": "vite",
         "typecheck": "tsc --noEmit",
         "build": "tsc --noEmit && vite build && vite build --config vite.scriptinjections.config.ts",
-        "build-firefox": "$npm_execpath build && patch -d build < firefox/manifest.json.patch && cd build && zip -r {6d1f30b1-2f6d-48f9-a01a-c32a0c27d12d}.xpi .",
+        "build-firefox": "\"$npm_execpath\" run build && patch -d build < firefox/manifest.json.patch && cd build && zip -r {6d1f30b1-2f6d-48f9-a01a-c32a0c27d12d}.xpi .",
+        "build-for-amo": "\"$npm_execpath\" install && \"$npm_execpath\" run build-firefox",
         "test": "vitest"
     },
     "eslintConfig": {
