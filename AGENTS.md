@@ -71,6 +71,32 @@ The two paths use different character-mapping strategies:
 
 The `Long passwords` toggle in the UI (`DerivationOptions`) is shown only when the current domain uses legacy derivation (`useLegacyDerivation` is true). New (modern) configs always write `allowExtraLongPasswords: false`; the field is retained in `IDomainConfig` and the backup serialization format for compatibility with existing legacy configs and backups.
 
+## Storage & backup format
+
+Per-domain configuration (`IDomainConfig` in `src/lib/storage.ts`) is persisted as JSON under the `metadata` key in `storage.local` (see `load`/`store` in `src/lib/storage.ts`). Fields:
+
+- `passwordLength`, `passwordIteration` — derivation parameters.
+- `useSpecialCharacters`, `allowExtraLongPasswords` — derivation flags.
+- `totpSecret?: string` — optional per-domain TOTP secret as a lowercase hex string. Omitted / empty when the domain has no TOTP secret configured. (TOTP code generation is not yet implemented; the field is currently plumbed through storage, the React context, and the backup format only.)
+
+The backup/restore feature (`serializeAll`, `preParseBackup`, `importBackup`) serializes each domain config as a record inside a compact hex string. The record format is:
+
+```
+domainId (4 bytes / 8 hex) | length (1B) | iteration (1B) | flags (1B) [ | totpSize (1B) | totpSecret (totpSize bytes) ]
+```
+
+The fixed 7-byte prefix (14 hex chars) is followed, conditionally, by a TOTP section. Flags byte values:
+
+- `0x01` — `useSpecialCharacters`
+- `0x02` — `allowExtraLongPasswords`
+- `0x04` — `totpSecret`. Enabled the optional TOTP section.
+
+Backwards compatibility:
+- Configs without a `totpSecret` (or with an empty one) serialize to byte-identical output as the pre-TOTP format (exactly 14 hex chars). Old backups therefore remain readable.
+- New backups that include a TOTP secret are **not** readable by older versions of the extension, which treated records as fixed 14-hex-char and will reject the variable-length records via `preParseBackup`. This is intentional and unavoidable given the format extension.
+
+`preParseBackup` walks the backup string record-by-record (variable-length, honoring `FLAG_TOTP_SECRET`) and returns the record count, or `undefined` on any malformed input (truncated size/secret, non-hex characters, trailing garbage). It is consumed by `BackupOptions.component.tsx` to render "Import contents: N configurations" and to gate the Import button.
+
 ## Extension privileges
 
 The manifest (`public/manifest.json`) requests the following permissions and host permissions. Each is listed with the code that consumes it.
