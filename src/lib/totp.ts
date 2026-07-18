@@ -16,6 +16,12 @@ export interface TOTPSettings {
     digits: number
 };
 
+export interface TOTPPeriodInfo {
+    current: number,
+    startedUnixSeconds: number,
+    endsUnixSeconds: number
+};
+
 export const TOTP_DEFAULT_SETTINGS: TOTPSettings = {
     t0: TOTP_T0,
     periodLength: TOTP_PERIOD_LENGTH,
@@ -48,9 +54,21 @@ const toInt32 = (rawData: Uint8Array) =>
     | (rawData[3] & 0xff);
 
 
+export const totpPeriodInfo = (timeSeconds: number = Math.floor(Date.now() / 1000), configuration: TOTPSettings = TOTP_DEFAULT_SETTINGS): TOTPPeriodInfo => {
+    const period = Math.floor((timeSeconds - configuration.t0) / configuration.periodLength);
+    const started = period * configuration.periodLength + configuration.t0;
+    const ends = (period + 1) * configuration.periodLength + configuration.t0;
+
+    return {
+        current: period,
+        startedUnixSeconds: started,
+        endsUnixSeconds: ends
+    }
+};
+
 export const generateTotp = async (secret: Uint8Array, timeSeconds: number = Math.floor(Date.now() / 1000), configuration: TOTPSettings = TOTP_DEFAULT_SETTINGS): Promise<string> => {
     const key = await asDerivationKey(secret);
-    const period = Math.floor((timeSeconds - configuration.t0) / configuration.periodLength);
+    const period = totpPeriodInfo(timeSeconds).current;
 
     const hmac = new Uint8Array(await crypto.subtle.sign('HMAC', key, encodePeriod(period) as BufferSource));
 

@@ -3,6 +3,7 @@ import { PasswordChecksumProvider } from '../contexts/PasswordChecksumContext.co
 import { PageContextProvider } from '../contexts/PageContext.component';
 import { PasswordContext, PasswordContextProvider } from '../contexts/PasswordContext.component';
 import { ConfigurationContext, ConfigurationContextProvider } from '../contexts/ConfigurationContext.component';
+import { TotpContextProvider } from '../contexts/TotpContext.component';
 import { DomainPicker } from '../domainpicker/DomainPicker.component';
 import { MasterPassword } from '../masterpassword/MasterPassword.component';
 import { DerivationOptions } from '../derivationoptions/DerivationOptions.component';
@@ -53,7 +54,9 @@ export const Popup: React.FC = () => {
             <PageContextProvider>
                 <PasswordContextProvider>
                     <ConfigurationContextProvider>
-                        <PopupComponent />
+                        <TotpContextProvider>
+                            <PopupComponent />
+                        </TotpContextProvider>
                     </ConfigurationContextProvider>
                 </PasswordContextProvider>
             </PageContextProvider>
