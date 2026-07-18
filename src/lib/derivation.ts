@@ -3,6 +3,7 @@ import { bufferToHex, hexToBuffer } from './hexutils';
 
 export const SEED_PREFIX = 'E. W. Password Generator Seed';
 export const DERIVE_PREFIX = 'Domain Password';
+export const TOTP_KEY_PREFIX = 'Domain TOTP Secret Key';
 export const BASIC_MAP = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 export const EXTENDED_MAP = BASIC_MAP + '`~!@#$%^&*()-_=+[{]}\\|;:\'",<.>/?';
 
@@ -134,4 +135,7 @@ const derivePasswordModern = async (entropy: MasterEntropy, domain: string, size
 
 export const derivePassword = async (entropy: MasterEntropy, domain: string, size: number, iteration: number = 1, useSpecialCharacters: boolean = true, allowExtraLongPasswords: boolean = false, legacyDerivation: boolean = false): Promise<string> =>
     legacyDerivation ? derivePasswordLegacy(entropy, domain, size, iteration, useSpecialCharacters, allowExtraLongPasswords)
-                     : await derivePasswordModern(entropy, domain, size, iteration, useSpecialCharacters);
+        : await derivePasswordModern(entropy, domain, size, iteration, useSpecialCharacters);
+
+export const deriveTotpKey = async (entropy: MasterEntropy, domain: string, size: number): Promise<Uint8Array> =>
+    new Uint8Array(await hkdfDeriveBytes(size, [TOTP_KEY_PREFIX, domain], entropy));
