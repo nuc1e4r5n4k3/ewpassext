@@ -1,0 +1,54 @@
+Build instructions
+------------------
+
+Building the submitted artifact from source:
+
+    npm run build-for-amo
+
+This requires Unix/Linux `patch` and `zip` commands available.
+
+For more information, see the README.md in the source.
+
+
+AMO automatic-validation warnings
+----------------------------------
+
+The validator flags two "Unsafe assignment to innerHTML" hits:
+
+    main.js line 9 column 1782
+    main.js line 9 column 4649
+
+Both hits are inside the production minified bundle of React's DOM property-commit logic (`react-dom`). This is React's framework code, not application code.
+
+
+Required permissions oversight
+------------------------------
+
+  * activeTab — read the URL/id of the tab the popup was invoked on, to derive the per-domain password and target injection.
+  * alarms — wipe the in-memory PBKDF2-derived master entropy from `storage.session` after the user-configured TTL (max 180 s) so it is not kept around indefinitely.
+  * scripting — inject `contentscript.js` into HTTPS pages (auto-inject on top-level HTTPS navigation, and on-demand "inject automatically").
+  * storage — `storage.local` persists the per-domain derivation-options map under the `metadata` key; `storage.session` holds the derived master entropy for the current session only.
+  * webNavigation — auto-inject the content script on top-level HTTPS navigations, and refresh the popup's cached tab/domain info when the active tab navigates.
+  * https://*/* — gates the `scripting.executeScript` calls above and the `activeTab` URL read on any HTTPS page. The extension never makes any outbound network request; the host permission is needed only so the injected content script can run on HTTPS pages.
+
+Optional permission
+
+  * clipboardRead — requested on-demand, inside the user gesture fired when the user clicks the "backup options" link. Backs `navigator.clipboard.readText()` in the backup/import panel, used to read a serialized configuration-backup string off the clipboard.
+
+
+Data collection
+----------------
+
+The extension collects no data and makes no outbound network requests. All cryptography, derivation, and storage happen locally on the device.
+Neither the master password nor any derived site password is ever written to disk; the PBKDF2-derived master entropy is held only in `storage.session` and is wiped within at most 180 seconds.
+Optional TOTP secrets *are* written to `storage.local`, encryped using a domain-specific key derived from the master password.
+
+
+Further reading
+----------------
+
+The repository's `README.md` contains the full user manual, technical reference (derivation algorithm, storage layout, security model), and developer guide.
+
+The source repository is at:
+
+    https://github.com/nuc1e4r5n4k3/ewpassext/
