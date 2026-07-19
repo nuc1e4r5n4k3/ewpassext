@@ -50,7 +50,7 @@ Vitest is configured in `vite.config.ts` (`test.environment: 'happy-dom'`). `@te
 | `src/components/contexts/` | React context providers (`ConfigurationContext`, `PasswordContext`, `PageContext`, `PasswordChecksumContext`, `TotpContext`) |
 | `src/components/totp/` | TOTP UI (`Totp`) |
 | `src/components/backupoptions/` | Backup/restore UI (`BackupOptions`) |
-| `src/lib/` | Core logic: derivation (`derivation.ts`, `hexutils.ts`), storage, domain helpers, TOTP (`totp.ts`), base32 (`base32.ts`) |
+| `src/lib/` | Core logic: derivation (`derivation.ts`, `hexutils.ts`), storage, domain helpers, TOTP (`totp.ts`), base32 (`base32.ts`), XOR encryption (`encryption.ts`) |
 | `src/internalapi/` | Types/requests/handler for popup ↔ content script IPC |
 | `src/serviceworker/` | Chrome background service worker logic |
 | `src/scriptinjections/` | Content script injection code |
