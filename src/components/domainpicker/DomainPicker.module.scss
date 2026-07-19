@@ -36,65 +36,6 @@
     }
 }
 
-.domainInputLabel {
-    display: flex;
-    margin-top: 10px;
-    margin-right: 5px;
-}
-
-.domainInputLabel > p {
-    display: block;
-    margin: auto;
-    font-weight: bold;
-}
-
-.domainInput {
-    margin-top: 10px;
-    border-radius: 6px;
-    width: 100%;
-    height: 20px;
-    padding-left: 10px;
-    border: 1px solid #cbd5e1;
-    outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-
-    &:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
-    }
-}
-
-.domainInput[state=match] {
-    background-color: #dcfce7;
-    border-color: #22c55e;
-}
-
-.domainInput[state=nomatch] {
-    background-color: #fee2e2;
-    border-color: #ef4444;
-}
-
-.domainInputStatusIcon {
-    margin-top: 10px;
-    margin-left: -30px;
-    margin-right: 10px;
-    width: 30px;
-    height: 100%;
-    font-size: 100%;
-    font-weight: bold;
-    text-align: center;
-    vertical-align: middle;
-    pointer-events: none;
-}
-
-.domainInputStatusIcon[state=match] {
-    color: rgb(0, 128, 0);
-}
-
-.domainInputStatusIcon[state=nomatch] {
-    color: rgb(128, 0, 0);
-}
-
 .deleteButtonWrapper {
     margin: 10px 0px 0px 0px;
     height: 30px;

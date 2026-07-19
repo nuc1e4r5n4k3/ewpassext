@@ -4,27 +4,12 @@ import { PageContext } from '../contexts/PageContext.component';
 import { PasswordContext } from '../contexts/PasswordContext.component';
 import { ConfigurationContext } from '../contexts/ConfigurationContext.component';
 import { UIGroup } from '../uiutils/UIGroup.component';
+import { ValidatedInput } from '../uiutils/ValidatedInput.component';
 import classes from './DomainPicker.module.scss';
 
 interface SelectOption {
     value: string;
     label: string;
-};
-
-enum MatchState {
-    Match = 'match',
-    NoMatch = 'nomatch'
-};
-
-namespace MatchState {
-    export function from(matches: boolean): MatchState {
-        return matches ? MatchState.Match : MatchState.NoMatch;
-    }
-};
-
-const MatchStateIcon: { [key: string]: string } = {
-    [MatchState.Match]: '✔',
-    [MatchState.NoMatch]: '❌'
 };
 
 const toSelectOption = (value: string): SelectOption => {
@@ -51,8 +36,7 @@ export const DomainPicker: React.FC = () => {
     const [selectedDomain, setSelectedDomain] = useState<string>();
     const [showDeleteConfig, setShowDeleteConfig] = useState<boolean>(false);
     const [showDomainInput, setShowDomainInput] = useState<boolean>(false);
-    const [enteredDomain, setEnteredDomain] = useState<string>('');
-    const [matchState, setMatchState] = useState<MatchState | undefined>(undefined);
+    const [enteredDomain, setEnteredDomain] = useState<string>();
     const [isSelectedDomainConfigured, setIsSelectedDomainConfigured] = useState<boolean>(false);
 
     /**
@@ -67,11 +51,6 @@ export const DomainPicker: React.FC = () => {
             return await storage.checkDomainHasConfig(domain || selectedDomain!);
         return false;
     }, [selectedDomain, storage]);
-
-    /**
-     *  Same as domainHasConfig(), but returns a MatchState result.
-     */
-    const domainMatchState = useCallback(async (domain: string): Promise<MatchState> => MatchState.from(await domainHasConfig(domain)), [domainHasConfig]);
 
     /**
      *  Check if domain is related to current page.
@@ -92,19 +71,6 @@ export const DomainPicker: React.FC = () => {
         if (!showDomainInput)
             setEnteredDomain('');
     }, [showDomainInput])
-
-    /**
-     *  Update enteredDomain matchState state (is domain known/has a valid config) when it changes.
-     * 
-     *  Note that matchState is reset to undefined when enteredDomain is reset.
-     */
-    useEffect(() => {
-        if (enteredDomain !== '') {
-            domainMatchState(enteredDomain).then(setMatchState);
-        } else {
-            setMatchState(undefined);
-        }
-    }, [enteredDomain, domainMatchState]);
 
     /**
      *  Load the config for the current page.
@@ -160,14 +126,16 @@ export const DomainPicker: React.FC = () => {
         checkConfig();
     }, [domainHasConfig]);
 
-    const trySelectCustomDomain = useCallback((): boolean => {
-        if (enteredDomain && matchState === MatchState.Match) {
-            setSelectedDomain(enteredDomain);
-            setShowDomainInput(false);
-            return true;
+    const selectCustomDomain = (domain: string) => {
+        setSelectedDomain(domain);
+        setShowDomainInput(false);
+    };
+
+    const trySelectCustomDomain = useCallback(() => {
+        if (enteredDomain) {
+            selectCustomDomain(enteredDomain);
         }
-        return false;
-    }, [enteredDomain, matchState]);
+    }, [enteredDomain]);
 
     return (
         <UIGroup title='Domain'>
@@ -189,23 +157,7 @@ export const DomainPicker: React.FC = () => {
                     </div>
                     {showDomainInput ? (
                         <div className={classes.selectorLine}>
-                            <div className={classes.domainInputLabel}>
-                                <p>Domain:</p>
-                            </div>
-                            <input
-                                autoFocus={true}
-                                onChange={e => setEnteredDomain(e.target.value)}
-                                onBlur={trySelectCustomDomain}
-                                onKeyUp={e => {
-                                    if (e.key === 'Enter') {
-                                        trySelectCustomDomain();
-                                        e.stopPropagation();
-                                    }
-                                }}
-                                className={classes.domainInput}
-                                {...{ state: matchState }}
-                            ></input>
-                            <div {...{ state: matchState }} className={classes.domainInputStatusIcon}>{matchState ? MatchStateIcon[matchState] : ''}</div>
+                            <ValidatedInput label="Domain:" autofocus={true} validate={domainHasConfig} onSelectValue={selectCustomDomain} onUpdateValue={setEnteredDomain} />
                         </div>
                     ) : (
                         <>
