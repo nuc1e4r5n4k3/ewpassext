@@ -11,7 +11,7 @@ import { PasswordContext } from '../contexts/PasswordContext.component';
 import { IDomainConfig } from '../../lib/storage';
 
 
-const makeConfig = (passwordSize: number = 16, iteration: number = 1, useSpecialCharacters: boolean = true, allowExtraLongPasswords: boolean = false, current: IDomainConfig): IDomainConfig => {
+const makeConfig = (passwordSize: number = 16, iteration: number = 1, useSpecialCharacters: boolean = true, allowExtraLongPasswords: boolean = false, current?: IDomainConfig): IDomainConfig => {
     return {
         ...current,
         allowExtraLongPasswords: allowExtraLongPasswords,
@@ -51,7 +51,7 @@ export const DerivationOptions: React.FC<Props> = ({ showBackupOptions }) => {
     const [dirty, setDirty] = useState<boolean>(false);
 
     const saveConfig = () => {
-        if (storage.currentDomainConfig && storage.setConfigForCurrentDomain) {
+        if (storage.setConfigForCurrentDomain) {
             storage.setConfigForCurrentDomain(makeConfig(passwordSize, iteration, useSpecialCharacters, useLegacyDerivation ? allowExtraLongPasswords : false, storage.currentDomainConfig));
         }
     };
@@ -68,13 +68,8 @@ export const DerivationOptions: React.FC<Props> = ({ showBackupOptions }) => {
     }, [useLegacyDerivation, useSpecialCharacters, allowExtraLongPasswords]);
 
     useEffect(() => {
-        if (!storage.currentDomainConfig) {
-            setDirty(false);
-            return;
-        }
-
         const newConfig = makeConfig(passwordSize, iteration, useSpecialCharacters, allowExtraLongPasswords, storage.currentDomainConfig);
-        setDirty(!objectsAreEqual(storage.currentDomainConfig, newConfig))
+        setDirty(!storage.currentDomainConfig || !objectsAreEqual(storage.currentDomainConfig, newConfig))
     }, [storage, passwordSize, iteration, useSpecialCharacters, allowExtraLongPasswords]);
 
     useEffect(() => {
