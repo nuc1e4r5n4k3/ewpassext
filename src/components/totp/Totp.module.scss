@@ -24,10 +24,130 @@
     margin: 0px auto;
 }
 
+.codeBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 44px;
+    margin-top: 10px;
+    margin-bottom: 4px;
+}
+
+@font-face {
+    font-family: 'Share Tech Mono';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/ShareTechMono.woff2') format('woff2');
+}
+
 .code {
-    text-align: center;
-    font-size: 140%;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    font-family: 'Share Tech Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 36px;
     font-weight: bold;
-    letter-spacing: 4px;
-    margin: 6px 0px;
+    letter-spacing: 2px;
+    color: #1d4ed8;
+    min-height: 34px;
+    transition: color 0.2s ease;
+}
+
+.progressTrack {
+    width: 140px;
+    height: 3px;
+    background-color: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progressBar {
+    height: 100%;
+    margin-left: auto;
+    background-color: #1d4ed8;
+    border-radius: 2px;
+}
+
+.expiring {
+    color: #dc2626;
+    animation: blink 1s steps(10, start) infinite;
+}
+
+.expiring.progressBar {
+    background-color: #dc2626;
+    animation: none;
+}
+
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.35;
+    }
+}
+
+.skeleton {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.skeletonCode {
+    width: 180px;
+    height: 34px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonBar {
+    width: 70%;
+    height: 4px;
+    margin-top: 6px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.button {
+    width: 180px;
+    margin-top: 8px;
+    height: 30px;
+    font-size: 110%;
+    background-color: #3b82f6;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+        background-color: #2563eb;
+    }
+
+    &:focus {
+        background-color: #1d4ed8;
+        outline: 3px solid #1d4ed8;
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        background-color: #93c5fd;
+        cursor: not-allowed;
+    }
 }
