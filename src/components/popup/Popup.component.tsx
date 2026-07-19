@@ -8,6 +8,7 @@ import { DomainPicker } from '../domainpicker/DomainPicker.component';
 import { MasterPassword } from '../masterpassword/MasterPassword.component';
 import { DerivationOptions } from '../derivationoptions/DerivationOptions.component';
 import { PasswordGenerator } from '../passwordgenerator/PasswordGenerator.component';
+import { Totp } from '../totp/Totp.component';
 import { useState, useRef, useEffect, useContext } from 'react';
 import { BackupOptions } from '../backupoptions/BackupOptions.component';
 import { UIGroup } from '../uiutils/UIGroup.component';
@@ -34,6 +35,7 @@ const PopupComponent: React.FC = () => {
             {storage.totalConfigurations !== undefined ? <>
                 <DomainPicker />
                 <DerivationOptions showBackupOptions={showBackupOptionsTrigger} />
+                <Totp />
                 <PasswordGenerator />
                 {showBackupOptions ? (
                     <BackupOptions />

@@ -48,6 +48,7 @@ Vitest is configured in `vite.config.ts` (`test.environment: 'happy-dom'`). `@te
 |---|---|
 | `src/components/` | React UI (popup views + shared uiutils) |
 | `src/components/contexts/` | React context providers (`ConfigurationContext`, `PasswordContext`, `PageContext`, `PasswordChecksumContext`, `TotpContext`) |
+| `src/components/totp/` | TOTP UI (`Totp`) |
 | `src/components/backupoptions/` | Backup/restore UI (`BackupOptions`) |
 | `src/lib/` | Core logic: derivation (`derivation.ts`, `hexutils.ts`), storage, domain helpers, TOTP (`totp.ts`), base32 (`base32.ts`) |
 | `src/internalapi/` | Types/requests/handler for popup ↔ content script IPC |
@@ -104,15 +105,9 @@ Per-domain TOTP secrets and code generation are implemented in `src/lib/totp.ts`
 - `generateTotp(secret, timeSeconds, settings)` — RFC 6238 TOTP, HMAC-SHA-1, 6 digits, 30 s period, t0 = 0 (`TOTP_DEFAULT_SETTINGS`). Settings are hardcoded; non-default digits/period/algorithm are not supported.
 - `encryptTotpSecret(rawSecret, domain, entropy)` / `decryptTotpSecret(storedHex, domain, entropy)` — XOR the raw secret against `deriveTotpKey(...)` so the persisted `IDomainConfig.totpSecret` never contains the plaintext secret. Encryption is deterministic given (entropy, domain); the raw secret is recoverable only while master entropy is in memory.
 
-Secret input is parsed by `parseTotpSecretInput(input)` in `src/lib/totp.ts`. It accepts either a bare RFC 4648 base32 secret (case-insensitive, padding/whitespace tolerated) or an `otpauth://totp/...?secret=...` URL. URL `digits`, `period`, and `algorithm` parameters are validated against the defaults; any non-default value causes the parser to throw (per the "defaults only" decision). Base32 decoding lives in the generic `src/lib/base32.ts` (`decodeBase32`, `isBase32`).
+Secret input is parsed by `parseTotpConfiguratonString(input)` in `src/lib/totp.ts`. It accepts either a bare RFC 4648 base32 secret (case-insensitive, padding/whitespace tolerated) or an `otpauth://totp/...?secret=...` URL. URL `digits`, `period`, and `algorithm` parameters are validated against the defaults; any non-default value causes the parser to throw (per the "defaults only" decision). Base32 decoding lives in the generic `src/lib/base32.ts` (`decodeBase32`, `isBase32`).
 
-The in-memory TOTP state for the popup is exposed to the UI via `TotpContext` (`src/components/contexts/TotpContext.component.tsx`), which nests inside `ConfigurationContextProvider` (it consumes both `PasswordContext` and `ConfigurationContext`). The interface:
-
-- `code?: string` — current 6-digit code. `undefined` when no master entropy is available, no TOTP config exists for the current domain, or decryption currently fails.
-- `expiresAt?: number` — unix seconds of the next period boundary; the UI computes `ttl = expiresAt - now`.
-- `setSecret(input: string | undefined)` — overwrites the current domain's TOTP secret. Accepts base32 or an `otpauth://` URL via `parseTotpSecretInput`; `undefined` clears the secret. On parse failure the stored secret is cleared destructively (the caller can detect this via `input && !code` and surface an error). No-op when no master entropy / current domain / current config is available.
-
-A 1 s `setInterval` re-derives the code at the period boundary and refreshes `expiresAt` for the UI countdown. `TotpContextProvider` is wired in `src/components/popup/Popup.component.tsx`; no UI consumers are wired yet.
+The in-memory TOTP state for the popup is exposed to the UI via `TotpContext` (`src/components/contexts/TotpContext.component.tsx`), which nests inside `ConfigurationContextProvider` (it consumes both `PasswordContext` and `ConfigurationContext`).
 
 ## Extension privileges
 

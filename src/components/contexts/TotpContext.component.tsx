@@ -4,9 +4,11 @@ import { PasswordContext } from './PasswordContext.component';
 import { decryptTotpSecret, encryptTotpSecret, generateTotp, parseTotpConfiguratonString, TOTP_DEFAULT_SETTINGS, totpPeriodInfo } from '../../lib/totp';
 
 export interface ITotpContext {
+    show: boolean;
     code?: string;
     expiresAt?: number;
     setSecret: (input: string | undefined) => void;
+    setShowInput: (b: boolean) => void;
 }
 
 export const TotpContext = createContext<ITotpContext | undefined>(undefined);
@@ -26,22 +28,23 @@ const secretFromConfigString = (config?: string): Uint8Array | undefined => {
 };
 
 export const TotpContextProvider: React.FC<Props> = ({ children }) => {
-    const configurationContext = useContext(ConfigurationContext);
+    const storage = useContext(ConfigurationContext);
     const passwordContext = useContext(PasswordContext);
 
-    const storedSecret = configurationContext?.currentDomainConfig?.totpSecret;
-    const domain = configurationContext?.currentDomain;
+    const storedSecret = storage?.currentDomainConfig?.totpSecret;
+    const domain = storage?.currentDomain;
     const entropy = passwordContext?.derivationEntropy;
 
+    const [show, setShow] = useState<boolean>(false);
+    const [showInput, setshowInput] = useState<boolean>(false);
+    const [secret, setSecret] = useState<Uint8Array | undefined>();
     const [code, setCode] = useState<string | undefined>();
     const [expiresAt, setExpiresAt] = useState<number | undefined>();
 
-    const secretRef = useRef<Uint8Array | undefined>(undefined);
     const periodRef = useRef<number | undefined>(undefined);
 
 
     const recompute = useCallback(async () => {
-        const secret = secretRef.current;
         if (secret === undefined) {
             setCode(undefined);
             setExpiresAt(undefined);
@@ -51,29 +54,37 @@ export const TotpContextProvider: React.FC<Props> = ({ children }) => {
         const now = Math.floor(Date.now() / 1000);
         setExpiresAt(totpPeriodInfo(now).endsUnixSeconds);
         setCode(await generateTotp(secret, now));
-    }, []);
+    }, [secret]);
+
+    useEffect(() => {
+        setShow(!!storedSecret || showInput)
+    }, [showInput, storedSecret])
+
+    useEffect(() => {
+        setshowInput(false);
+    }, [domain]);
 
     useEffect(() => {
         let cancelled = false;
 
         (async () => {
-            secretRef.current = await (async () => {
+            setSecret(await (async () => {
                 if (!entropy || !domain || !storedSecret) return undefined;
 
                 try {
-                    secretRef.current = await decryptTotpSecret(storedSecret, domain, entropy);
+                    return await decryptTotpSecret(storedSecret, domain, entropy);
                 } catch {
-                    secretRef.current = undefined;
+                    return undefined;
                 }
-            })();
+            })());
             if (!cancelled) await recompute();
         })();
 
         return () => { cancelled = true; };
-    }, [entropy, domain, storedSecret, recompute]);
+    }, [entropy, domain, storedSecret]);
 
     useEffect(() => {
-        if (secretRef.current === undefined) {
+        if (secret === undefined) {
             return;
         }
 
@@ -87,11 +98,11 @@ export const TotpContextProvider: React.FC<Props> = ({ children }) => {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [recompute, code !== undefined]);
+    }, [code !== undefined, secret]);
 
-    const setSecret = useCallback((input: string | undefined) => {
-        const currentDomainConfig = configurationContext?.currentDomainConfig;
-        const setDomainConfig = configurationContext?.setConfigForCurrentDomain;
+    const setAndStoreSecret = useCallback((input: string | undefined) => {
+        const currentDomainConfig = storage?.currentDomainConfig;
+        const setDomainConfig = storage?.setConfigForCurrentDomain;
 
         if (!currentDomainConfig || !setDomainConfig || !entropy || !domain) {
             return;
@@ -105,13 +116,16 @@ export const TotpContextProvider: React.FC<Props> = ({ children }) => {
         } else {
             setConfig(undefined);
         }
-    }, [configurationContext, entropy, domain]);
+    }, [storage, entropy, domain]);
 
     return (
         <TotpContext.Provider value={{
+            show: show,
             code: code,
             expiresAt: expiresAt,
-            setSecret: setSecret
+
+            setSecret: setAndStoreSecret,
+            setShowInput: setshowInput
         }}>
             {children}
         </TotpContext.Provider>

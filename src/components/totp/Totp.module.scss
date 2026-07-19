@@ -1,0 +1,33 @@
+.info {
+    margin: 0px 20px;
+    font-size: 10pt;
+}
+
+.info pre {
+    display: inline;
+}
+
+.wrapper {
+    display: flex;
+}
+
+.wrapper > div {
+    flex: 1;
+    text-align: left;
+    margin: 0px 20px;
+}
+
+.inputLine {
+    display: flex;
+    flex-direction: row;
+    width: 70%;
+    margin: 0px auto;
+}
+
+.code {
+    text-align: center;
+    font-size: 140%;
+    font-weight: bold;
+    letter-spacing: 4px;
+    margin: 6px 0px;
+}

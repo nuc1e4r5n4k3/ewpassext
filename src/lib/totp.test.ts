@@ -104,7 +104,7 @@ describe('deriveTotpKey (via encrypt/decrypt)', () => {
     });
 });
 
-describe('parseTotpSecretInput', () => {
+describe('parseTotpConfiguratonString', () => {
     it('accepts a bare base32 secret', () => {
         const result = parseTotpConfiguratonString('JBSWY3DPEHPK3PXP');
         expect(Array.from(result)).toEqual([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x21, 0xde, 0xad, 0xbe, 0xef]);
