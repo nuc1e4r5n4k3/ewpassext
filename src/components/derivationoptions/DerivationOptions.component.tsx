@@ -6,11 +6,14 @@ import classes from './DerivationOptions.module.scss';
 import { getMaxPasswordSizeLegacy, MAX_PASSWORD_SIZE_MODERN } from '../../lib/derivation';
 import { UIGroup } from '../uiutils/UIGroup.component';
 import { ConfigurationContext } from '../contexts/ConfigurationContext.component';
+import { TotpContext } from '../contexts/TotpContext.component';
+import { PasswordContext } from '../contexts/PasswordContext.component';
 import { IDomainConfig } from '../../lib/storage';
 
 
-const makeConfig = (passwordSize: number = 16, iteration: number = 1, useSpecialCharacters: boolean = true, allowExtraLongPasswords: boolean = false): IDomainConfig => {
+const makeConfig = (passwordSize: number = 16, iteration: number = 1, useSpecialCharacters: boolean = true, allowExtraLongPasswords: boolean = false, current: IDomainConfig): IDomainConfig => {
     return {
+        ...current,
         allowExtraLongPasswords: allowExtraLongPasswords,
         passwordIteration: iteration,
         passwordLength: passwordSize,
@@ -36,6 +39,9 @@ type Props = {
 
 export const DerivationOptions: React.FC<Props> = ({ showBackupOptions }) => {
     const storage = useContext(ConfigurationContext);
+    const totpContext = useContext(TotpContext);
+    const passwordContext = useContext(PasswordContext);
+
     const [maxPasswordSize, setMaxPasswordSize] = useState<number>(32);
     const [useSpecialCharacters, setUseSpecialCharacters] = useState<boolean>(true);
     const [useLegacyDerivation, setUseLegacyDerivation] = useState<boolean>(false);
@@ -45,8 +51,8 @@ export const DerivationOptions: React.FC<Props> = ({ showBackupOptions }) => {
     const [dirty, setDirty] = useState<boolean>(false);
 
     const saveConfig = () => {
-        if (storage.setConfigForCurrentDomain) {
-            storage.setConfigForCurrentDomain(makeConfig(passwordSize, iteration, useSpecialCharacters, useLegacyDerivation ? allowExtraLongPasswords : false));
+        if (storage.currentDomainConfig && storage.setConfigForCurrentDomain) {
+            storage.setConfigForCurrentDomain(makeConfig(passwordSize, iteration, useSpecialCharacters, useLegacyDerivation ? allowExtraLongPasswords : false, storage.currentDomainConfig));
         }
     };
 
@@ -62,8 +68,13 @@ export const DerivationOptions: React.FC<Props> = ({ showBackupOptions }) => {
     }, [useLegacyDerivation, useSpecialCharacters, allowExtraLongPasswords]);
 
     useEffect(() => {
-        const newConfig = makeConfig(passwordSize, iteration, useSpecialCharacters, allowExtraLongPasswords);
-        setDirty(!storage.currentDomainConfig || !objectsAreEqual(storage.currentDomainConfig, newConfig))
+        if (!storage.currentDomainConfig) {
+            setDirty(false);
+            return;
+        }
+
+        const newConfig = makeConfig(passwordSize, iteration, useSpecialCharacters, allowExtraLongPasswords, storage.currentDomainConfig);
+        setDirty(!objectsAreEqual(storage.currentDomainConfig, newConfig))
     }, [storage, passwordSize, iteration, useSpecialCharacters, allowExtraLongPasswords]);
 
     useEffect(() => {
@@ -117,6 +128,26 @@ export const DerivationOptions: React.FC<Props> = ({ showBackupOptions }) => {
                         <RowHeader value='Use legacy SHA-2:' />
                         <div>
                             <input type='checkbox' checked={storage.useLegacyDerivation} onChange={e => storage.setLegacyDerivation?.(e.target.checked)} className={classes.checkbox} />
+                        </div>
+                    </Row>
+                ) : (<></>)}
+                {totpContext && storage.currentDomainConfig ? (
+                    <Row>
+                        <RowHeader value='Enable OTP MFA:' />
+                        <div>
+                            <input
+                                type='checkbox'
+                                checked={!!storage.currentDomainConfig.totpSecret}
+                                onChange={e => {
+                                    if (e.target.checked) {
+                                        totpContext.setShowInput(true);
+                                    } else {
+                                        totpContext.setShowInput(false);
+                                        totpContext.setSecret(undefined);
+                                    }
+                                }}
+                                className={classes.checkbox}
+                            />
                         </div>
                     </Row>
                 ) : (<></>)}

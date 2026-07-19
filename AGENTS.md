@@ -47,9 +47,10 @@ Vitest is configured in `vite.config.ts` (`test.environment: 'happy-dom'`). `@te
 | Directory | Purpose |
 |---|---|
 | `src/components/` | React UI (popup views + shared uiutils) |
-| `src/components/contexts/` | React context providers (`ConfigurationContext`, `PasswordContext`, `PageContext`, `PasswordChecksumContext`) |
+| `src/components/contexts/` | React context providers (`ConfigurationContext`, `PasswordContext`, `PageContext`, `PasswordChecksumContext`, `TotpContext`) |
+| `src/components/totp/` | TOTP UI (`Totp`) |
 | `src/components/backupoptions/` | Backup/restore UI (`BackupOptions`) |
-| `src/lib/` | Core logic: derivation (`derivation.ts`, `hexutils.ts`), storage, domain helpers |
+| `src/lib/` | Core logic: derivation (`derivation.ts`, `hexutils.ts`), storage, domain helpers, TOTP (`totp.ts`), base32 (`base32.ts`), XOR encryption (`encryption.ts`) |
 | `src/internalapi/` | Types/requests/handler for popup ↔ content script IPC |
 | `src/serviceworker/` | Chrome background service worker logic |
 | `src/scriptinjections/` | Content script injection code |
@@ -57,7 +58,7 @@ Vitest is configured in `vite.config.ts` (`test.environment: 'happy-dom'`). `@te
 
 **Entry points:**
 - `src/index.tsx` → Popup page entrypoint (exposes `window.storage` with `dump` / `import` / `importLegacy` for backup & restore)
-- Components consume React context: `ConfigurationContext`, `PasswordContext`, `PageContext`, `PasswordChecksumContext`
+- Components consume React context: `ConfigurationContext`, `PasswordContext`, `PageContext`, `PasswordChecksumContext`, `TotpContext`
 
 ## Password derivation
 
@@ -70,6 +71,43 @@ The two paths use different character-mapping strategies:
 - **Legacy**: extracts characters from a fixed 256-bit SHA-256 hash via `calcRounds` (repeated `x % map.length` division). Without `allowExtraLongPasswords`, extraction stops when the remaining value drops below the map length (avoiding modulo bias but capping length at `getMaxPasswordSize`); with it enabled, extraction continues past that point, accepting modulo bias in the trailing characters to allow longer passwords.
 
 The `Long passwords` toggle in the UI (`DerivationOptions`) is shown only when the current domain uses legacy derivation (`useLegacyDerivation` is true). New (modern) configs always write `allowExtraLongPasswords: false`; the field is retained in `IDomainConfig` and the backup serialization format for compatibility with existing legacy configs and backups.
+
+## Storage & backup format
+
+Per-domain configuration (`IDomainConfig` in `src/lib/storage.ts`) is persisted as JSON under the `metadata` key in `storage.local` (see `load`/`store` in `src/lib/storage.ts`). Fields:
+
+- `passwordLength`, `passwordIteration` — derivation parameters.
+- `useSpecialCharacters`, `allowExtraLongPasswords` — derivation flags.
+- `totpSecret?: string` — optional per-domain TOTP secret, stored as the hex-encoded XOR-encrypted ciphertext of the raw secret bytes (see `encryptTotpSecret`/`decryptTotpSecret` in `src/lib/totp.ts`). Omitted / empty when the domain has no TOTP secret configured. The plaintext is never persisted; it is decrypted in memory by `TotpContext` only while master entropy is available.
+
+The backup/restore feature (`serializeAll`, `preParseBackup`, `importBackup`) serializes each domain config as a record inside a compact hex string. The record format is:
+
+```
+domainId (4 bytes / 8 hex) | length (1B) | iteration (1B) | flags (1B) [ | totpSize (1B) | totpSecret (totpSize bytes) ]
+```
+
+The fixed 7-byte prefix (14 hex chars) is followed, conditionally, by a TOTP section. Flags byte values:
+
+- `0x01` — `useSpecialCharacters`
+- `0x02` — `allowExtraLongPasswords`
+- `0x04` — `totpSecret`. Enabled the optional TOTP section.
+
+Backwards compatibility:
+- Configs without a `totpSecret` (or with an empty one) serialize to byte-identical output as the pre-TOTP format (exactly 14 hex chars). Old backups therefore remain readable.
+- New backups that include a TOTP secret are **not** readable by older versions of the extension, which treated records as fixed 14-hex-char and will reject the variable-length records via `preParseBackup`. This is intentional and unavoidable given the format extension.
+
+`preParseBackup` walks the backup string record-by-record (variable-length, honoring `FLAG_TOTP_SECRET`) and returns the record count, or `undefined` on any malformed input (truncated size/secret, non-hex characters, trailing garbage). It is consumed by `BackupOptions.component.tsx` to render "Import contents: N configurations" and to gate the Import button.
+
+## TOTP
+
+Per-domain TOTP secrets and code generation are implemented in `src/lib/totp.ts` on top of the per-domain HKDF key (`deriveTotpKey` in `src/lib/derivation.ts`):
+
+- `generateTotp(secret, timeSeconds, settings)` — RFC 6238 TOTP, HMAC-SHA-1, 6 digits, 30 s period, t0 = 0 (`TOTP_DEFAULT_SETTINGS`). Settings are hardcoded; non-default digits/period/algorithm are not supported.
+- `encryptTotpSecret(rawSecret, domain, entropy)` / `decryptTotpSecret(storedHex, domain, entropy)` — XOR the raw secret against `deriveTotpKey(...)` so the persisted `IDomainConfig.totpSecret` never contains the plaintext secret. Encryption is deterministic given (entropy, domain); the raw secret is recoverable only while master entropy is in memory.
+
+Secret input is parsed by `parseTotpConfiguratonString(input)` in `src/lib/totp.ts`. It accepts either a bare RFC 4648 base32 secret (case-insensitive, padding/whitespace tolerated) or an `otpauth://totp/...?secret=...` URL. URL `digits`, `period`, and `algorithm` parameters are validated against the defaults; any non-default value causes the parser to throw (per the "defaults only" decision). Base32 decoding lives in the generic `src/lib/base32.ts` (`decodeBase32`, `isBase32`).
+
+The in-memory TOTP state for the popup is exposed to the UI via `TotpContext` (`src/components/contexts/TotpContext.component.tsx`), which nests inside `ConfigurationContextProvider` (it consumes both `PasswordContext` and `ConfigurationContext`).
 
 ## Extension privileges
 
