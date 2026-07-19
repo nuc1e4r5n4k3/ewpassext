@@ -27,6 +27,7 @@ A legacy derivation path (plain SHA-256) is retained alongside the modern KDFs s
 - **Checksum** — a short 2-character checksum derived from the master entropy is displayed (and optionally stored) so the popup can detect whether the entered master password matches the one used to create the stored configuration.
 - **Multiple master passwords** — although designed around a single master password, the extension supports using more than one. Each master password produces its own independent set of domain configurations, and the extension automatically detects the right configs for whichever password is in session. The only caveat: the checksum feature has a single slot, so with multiple master passwords you leave it unset and verify the 2-character value yourself.
 - **Time-limited session** — the derived master entropy is held in `storage.session` for at most 180 seconds, then wiped by an `alarms`-driven timer. You can also clear it immediately from the popup.
+- **MFA codes (TOTP)** — optional, per-domain time-based one-time passwords shown in the popup alongside the site password. The TOTP secret is stored only as encrypted ciphertext; the code is recomputed on demand and is never persisted.
 
 ## AI disclosure
 
@@ -63,20 +64,47 @@ For each domain, the following parameters can be configured:
 
 Once a domain is selected and configured, the derived password is shown in the popup. You can copy it to the clipboard, or on most pages click "Inject automatically" (or just press ENTER) to have the the extension fill it directly into the page's password input fields.
 
+### Time-based one-time passwords (MFA codes)
+
+This is a separate, optional feature. For domains that require a second authentication factor, the extension can generate TOTP (time-based one-time password) codes alongside the site password. The code is a 6-digit value that refreshes every 30 seconds, computed per [RFC 6238](https://datatracker.ietf.org/doc/html/rfc6238) using HMAC-SHA-1. Settings are fixed to the defaults almost every service uses (6 digits, 30 second period, SHA-1, `t0 = 0`); the parser will refuse any `otpauth://` URL that asks for something else.
+
+#### Enabling MFA for a domain
+
+TOTP is only available for domains that already have a saved derivation configuration. Once a config exists for the current domain, a new row appears under *Derivation options*:
+
+**_Enable OTP MFA: [ ]_**
+
+Tick the checkbox to reveal a `Secret:` input below the MFA Code panel. Paste either a bare base32 secret string (case-insensitive, spaces and `=` padding tolerated) or a full `otpauth://totp/...?secret=...` URL. The input is validated as you type; non-default `digits`, `period`, or `algorithm` parameters in an `otpauth://` URL are rejected. Once a valid secret is accepted, it is encrypted and stored (see [Privacy & security](#privacy--security)) and the popup starts showing the current code.
+
+#### Using the code
+
+The popup displays the current 6-digit code with a countdown progress bar that fills as the 30 second window elapses. Click **_Copy to clipboard_** to copy the code (this also closes the popup). The code is recomputed locally every period; no network request is made.
+
+#### Decrypting the secret
+
+The encrypted secret can only be decrypted while your master entropy is in session. If not already sone so, you will need to (re-) enter your master password before the code appears.
+
+#### QR codes
+
+Many services distribute the TOTP secret as a QR image rather than text. The extension has no camera or QR-decoding capability, but there are several options available to decode a QR code: most screenshotting tools have support for it, there are QR-decoding browser extensions, or alternatively you can use your phone. Extract the `otpauth://` URL or the bare base32 secret from the image, then paste it into the **_Secret:_** field.
+
+#### Disabling MFA
+
+Untick **_Enable OTP MFA:_**. This clears the stored encrypted secret for the current domain. The derivation configuration itself is left untouched.
+
 ### Backup & restore
 
-The per-domain configuration map can be exported to the clipboard as a compact hex string and re-imported on another device or after a reinstall. Exporting requires no special permission. Importing from the clipboard requires the optional `clipboardRead` permission, which is requested on-demand the first time you click "backup options" — see [Privacy & security](#privacy--security) and the [privacy policy](doc/submission-requirements/privacy-policy.md) for details. Backups contain only derivation parameters (length, iteration, flags) keyed by derived domain identifiers; they never contain passwords, the master password, or master entropy and they can't be used (without knowing the master password) to know which domains the configs are for.
+The per-domain configuration map can be exported to the clipboard as a compact hex string and re-imported on another device or after a reinstall. Exporting requires no special permission. Importing from the clipboard requires the optional `clipboardRead` permission, which is requested on-demand the first time you click "backup options" — see [Privacy & security](#privacy--security) for details. Backups contain only derivation parameters (length, iteration, flags) keyed by derived domain identifiers, plus — for domains that have MFA enabled — the encrypted TOTP secret ciphertext. They never contain passwords, the master password, master entropy, or any plaintext; the TOTP secret is included only in its encrypted form and can only be decrypted by someone who knows the master password.
 
-**The backup is a convenience, not a necessity.** Because passwords are never stored and instead derived on demand from the master password and the per-domain options, a fresh install with the same master password and the same options will reproduce your passwords exactly, even with no backup at all. The backup simply spares you from re-entering your preferred length, iteration, and character-set choices for each domain; you would get the same passwords by recreating the same options manually. The backup contains no secret material and losing it changes nothing about your ability to derive your passwords.
+Unless you are using the MFA feature, **the backup is a convenience, not a necessity.** Because passwords are never stored and instead derived on demand from the master password and the per-domain options, a fresh install with the same master password and the same options will reproduce your passwords exactly, even with no backup at all. The backup simply spares you from re-entering your preferred length, iteration, and character-set choices for each domain; you would get the same passwords by recreating the same options manually. The backup contains no secret material and losing it changes nothing about your ability to derive your passwords. **Note that this changes when using this extension MFA**. Unless you manually backup the TOTP secrets and/or recovery codes, **you should create a backup of the configurations** and store this in a secure location whenever a new TOTP secret is added.  
 
 ## Privacy & security
 
 - **No network access.** The extension uses no `fetch`, `XMLHttpRequest`, `sendBeacon`, or any other networking API. All cryptography is performed locally via the browser's native Web Crypto API (`crypto.subtle`) and the bundled `sha256` library.
-- **No password storage.** The master password is processed in memory only and discarded immediately after PBKDF2. Derived site passwords are computed on demand and never written to persistent storage.
+- **No password storage.** The master password is processed in memory only and discarded immediately after PBKDF2. Derived site passwords are computed on demand and never written to persistent storage. The exception is the optional per-domain TOTP secret, which is stored only as encrypted ciphertext (see below).
 - **Time-limited session.** The derived master entropy lives in `storage.session` (cleared on browser close) for at most 180 seconds, then wiped by an `alarms` timer; you can also clear it immediately from the popup.
 - **Domain configurations are keyed by derived identifiers, not plaintext domain names.** This is a deliberate privacy feature. The per-domain configuration map stored in `storage.local` is keyed by 32-bit domain identifiers derived from your master password and the domain name (see [How passwords are derived](#how-passwords-are-derived)). Without the master password, the stored configuration reveals nothing about which websites you use — the keys are opaque. Domain lookup works by computing the identifier for a candidate domain and checking for membership in the map, similar to a Bloom filter. See the technical section for the collision implications.
-
-See [`doc/submission-requirements/privacy-policy.md`](doc/submission-requirements/privacy-policy.md) for the full privacy policy submitted to extension stores.
+- **Optional TOTP secret, encrypted at rest.** When MFA is enabled for a domain, the raw secret is XORed against a per-domain key derived via HKDF-SHA-256 from the master entropy, and the hex ciphertext is persisted in `storage.local`. The key is never stored and can only be recomputed while master entropy is in session. Because the stored bytes are the XOR of two opaque streams and the surrounding config format carries no marker, no length tag beyond the byte count, and no checksum that would confirm a successful decryption, an attacker with access to `storage.local` but no master password has no oracle to validate any guessed decryption. A wrong key produces a wrong plaintext that is indistinguishable from the right one. The effective security of the stored secret therefore reduces to the strength of your master password plus PBKDF2 (100 000 iterations of SHA-256).
 
 ## How passwords are derived
 
@@ -85,17 +113,21 @@ This section describes the derivation algorithm in full detail. All cryptography
 ### Pipeline
 
 ```
-master password ──PBKDF2──▶ master entropy ──┬──HKDF(domain)──▶ domain ID (config key)
- (discarded)      SHA-256    (2048-bit)      │
-                                             └──HKDF(iteration/domain)──▶ key material ──rejection sampling──▶ password
+master password ──PBKDF2──▶ master entropy ──┬──HKDF(domain)──────────▶ domain ID (config key)
+  (discarded)      SHA-256    (2048-bit)     │
+                                             ├──HKDF(iteration/domain)──▶ key material ──rejection sampling──▶ password
+                                             │
+                                             └──HKDF(domain, TOTP_KEY_PREFIX)──▶ TOTP storage key ──XOR──▶ encrypted ciphertext
+                                                                                                        (persisted in storage.local)
 ```
 
-Two derivation paths exist: a **modern** path (PBKDF2 + HKDF, the default for new configurations) and a **legacy** path (plain SHA-256, retained for configurations created with older versions of the extension). `deriveMasterEntropy` and `getDomainIds` return both modern and legacy inputs so both paths can coexist.
+Two derivation paths exist: a **modern** path (PBKDF2 + HKDF, the default for new configurations) and a **legacy** path (plain SHA-256, retained for configurations created with older versions of the extension). `deriveMasterEntropy` and `getDomainIds` return both modern and legacy inputs so both paths can coexist. The TOTP storage key is derived from the modern master entropy only; TOTP is independent of the legacy/modern password path.
 
 ### Constants and character maps
 
 - `SEED_PREFIX = "E. W. Password Generator Seed"` — PBKDF2 salt and HKDF salt for master entropy and domain ID derivation.
 - `DERIVE_PREFIX = "Domain Password"` — HKDF salt for password derivation; also the legacy SHA-256 input prefix.
+- `TOTP_KEY_PREFIX = "Domain TOTP Secret Key"` — HKDF salt for the per-domain TOTP storage key.
 - `BASIC_MAP` — the 62 alphanumeric characters (`a-z`, `A-Z`, `0-9`).
 - `EXTENDED_MAP` — `BASIC_MAP` plus 32 ASCII punctuation characters (backtick, tilde, `!`, `@`, `#`, `$`, `%`, `^`, `&`, `*`, `(`, `)`, `-`, `_`, `=`, `+`, `[`, `{`, `]`, `}`, `\`, `|`, `;`, `:`, `'`, `"`, `,`, `<`, `.`, `>`, `/`, `?`), for a total of 94 characters.
 - PBKDF2 iteration count: **100 000** (fixed internal constant; unrelated to the per-domain `Iteration:` option).
@@ -145,9 +177,33 @@ Both identifiers are 32-bit and therefore collision-prone (≈ 50% collision pro
   | no  | yes | 48 |
   | yes | yes | 40 |
 
+### Step 4: TOTP secret storage and code generation
+
+When MFA is enabled for a domain, the raw TOTP secret is never persisted; instead it is encrypted with a per-domain key derived from the master entropy, and only the ciphertext is stored in `storage.local` as the `totpSecret` field of the domain config. The code is then generated on demand whenever the popup is open and the master entropy is in session.
+
+**Key derivation** (`deriveTotpKey` in `src/lib/derivation.ts`):
+
+- HKDF-SHA-256, salt = UTF-8(`TOTP_KEY_PREFIX`), info = UTF-8(domain), output = `size` bytes, where `size` is the length of the raw secret. The key is length-matched to the secret so the encryption below is a simple byte-wise XOR.
+
+**Encryption** (`encryptTotpSecret` / `decryptTotpSecret` in `src/lib/totp.ts`, `xorBytes` / `encryptForStorage` in `src/lib/encryption.ts`):
+
+- The raw secret bytes are XORed byte-by-byte with the derived key, and the result is hex-encoded and persisted. Decryption is the same operation in reverse: hex-decode the stored ciphertext and XOR with the recomputed key. The scheme is symmetric and deterministic given (master entropy, domain).
+- XOR is appropriate here because the key stream is HKDF output derived from a 2048-bit high-entropy master entropy input, so it is indistinguishable from random to anyone without master entropy. The stored bytes therefore leak no information about the secret beyond its length. There is no integrity check, no magic marker, and no length tag beyond the byte count itself stored alongside the ciphertext; an attacker who guesses a wrong master password (and thus a wrong HKDF key) gets back a wrong plaintext that is indistinguishable from the right one. There is no oracle to confirm or refute a guess. Effectively, breaking the stored TOTP secret reduces to brute-forcing the master password through PBKDF2 (100 000 iterations of SHA-256).
+
+**Code generation** (`generateTotp` in `src/lib/totp.ts`):
+
+- RFC 6238 TOTP with hardcoded settings: HMAC-SHA-1, 6 decimal digits, 30 second period, `t0 = 0`.
+- The counter is `floor((t - t0) / period)`, encoded as a 64-bit big-endian unsigned integer.
+- HMAC is computed over the 8-byte counter; the last nibble of the HMAC selects a 4-byte window; that window is masked to 31 bits and reduced modulo `10^6`; the result is zero-padded to 6 digits.
+
+**Secret parsing** (`parseTotpConfiguratonString` in `src/lib/totp.ts`, base32 in `src/lib/base32.ts`):
+
+- Accepts either a bare RFC 4648 base32 secret (case-insensitive, whitespace and `=` padding tolerated) or an `otpauth://totp/...?secret=...` URL.
+- For URLs, the `digits`, `period`, and `algorithm` query parameters are validated against the hardcoded defaults; any non-default value causes the parser to throw. This is a deliberate decision: only the common case is supported, so every TOTP code the extension ever generates is a standard 6-digit, 30 second, SHA-1 code.
+
 ### Determinism
 
-Both derivation paths are deterministic: the same master password, domain, iteration, and configuration always produce the same password. There is no randomness involved. The test suite in `src/lib/derivation.test.ts` locks in golden-value outputs for both paths and verifies character-distribution sanity (modern within 15% deviation, legacy within 25% due to its inherent modulo bias).
+Both password derivation paths are deterministic: the same master password, domain, iteration, and configuration always produce the same password. There is no randomness involved. The test suite in `src/lib/derivation.test.ts` locks in golden-value outputs for both paths and verifies character-distribution sanity (modern within 15% deviation, legacy within 25% due to its inherent modulo bias).
 
 ## Browser support
 
@@ -191,14 +247,15 @@ The Chrome manifest carries a `"key"` field (the Chrome Web Store publisher key)
 | Directory | Purpose |
 |---|---|
 | `src/components/` | React UI (popup views and shared UI utilities) |
-| `src/components/contexts/` | React context providers (`ConfigurationContext`, `PasswordContext`, `PageContext`, `PasswordChecksumContext`) |
+| `src/components/contexts/` | React context providers (`ConfigurationContext`, `PasswordContext`, `PageContext`, `PasswordChecksumContext`, `TotpContext`) |
 | `src/components/backupoptions/` | Backup/restore UI |
 | `src/components/derivationoptions/` | Per-domain derivation parameter UI |
 | `src/components/domainpicker/` | Domain selection UI |
 | `src/components/masterpassword/` | Master password entry UI |
 | `src/components/passwordgenerator/` | Password generation, copy, and injection UI |
 | `src/components/checksum/` | Master password checksum UI |
-| `src/lib/` | Core logic: derivation (`derivation.ts`, `hexutils.ts`), storage, domain helpers |
+| `src/components/totp/` | TOTP code display, secret entry, and clipboard-copy UI |
+| `src/lib/` | Core logic: derivation (`derivation.ts`, `hexutils.ts`), storage, domain helpers, TOTP (`totp.ts`), base32 (`base32.ts`), XOR encryption (`encryption.ts`) |
 | `src/internalapi/` | Types, requests, and handler for popup ↔ content script ↔ service worker IPC |
 | `src/serviceworker/` | Background service worker logic |
 | `src/scriptinjections/` | Content script injection code |
@@ -211,7 +268,7 @@ The Chrome manifest carries a `"key"` field (the Chrome Web Store publisher key)
 - `src/serviceworker/index.ts` — background service worker
 - `src/scriptinjections/contentscript/index.ts` — content script
 
-Components consume React context: `ConfigurationContext`, `PasswordContext`, `PageContext`, `PasswordChecksumContext`.
+Components consume React context: `ConfigurationContext`, `PasswordContext`, `PageContext`, `PasswordChecksumContext`, `TotpContext`.
 
 ### Extension permissions
 

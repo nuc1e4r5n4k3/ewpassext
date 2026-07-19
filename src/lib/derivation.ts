@@ -3,6 +3,7 @@ import { bufferToHex, hexToBuffer } from './hexutils';
 
 export const SEED_PREFIX = 'E. W. Password Generator Seed';
 export const DERIVE_PREFIX = 'Domain Password';
+export const TOTP_KEY_PREFIX = 'Domain TOTP Secret Key';
 export const BASIC_MAP = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 export const EXTENDED_MAP = BASIC_MAP + '`~!@#$%^&*()-_=+[{]}\\|;:\'",<.>/?';
 
@@ -62,32 +63,37 @@ export interface DomainIds {
     legacyId: string;
 }
 
-export const getDomainIds = async (entropy: MasterEntropy, domain: string): Promise<DomainIds> => {
+const asKeyDerivationInput = (entropy: MasterEntropy): Promise<CryptoKey> =>
+    crypto.subtle.importKey(
+        'raw',
+        hexToBuffer(entropy.derivationInput),
+        { name: 'HKDF' },
+        false,
+        ['deriveBits']
+    );
+
+const hkdfDeriveBytes = async (size: number, path: [string, string], entropy: MasterEntropy): Promise<ArrayBuffer> => {
     const encoder = new TextEncoder();
-    const derivedBuffer = await crypto.subtle.deriveBits(
+    return await crypto.subtle.deriveBits(
         {
             name: 'HKDF',
             hash: 'SHA-256',
-            salt: encoder.encode(SEED_PREFIX),
-            info: encoder.encode(domain)
+            salt: encoder.encode(path[0]),
+            info: encoder.encode(path[1])
         },
-        await crypto.subtle.importKey(
-            'raw',
-            hexToBuffer(entropy.derivationInput),
-            { name: 'HKDF' },
-            false,
-            ['deriveBits']
-        ),
-        32
+        await asKeyDerivationInput(entropy),
+        size * 8
     );
+};
 
+export const getDomainIds = async (entropy: MasterEntropy, domain: string): Promise<DomainIds> => {
     return {
-        id: bufferToHex(derivedBuffer),
-        legacyId: sha256(entropy.legacyDerivationInput + '/' + domain).substr(0, 8)
+        id: bufferToHex(await hkdfDeriveBytes(4, [SEED_PREFIX, domain], entropy)),
+        legacyId: sha256(entropy.legacyDerivationInput + '/' + domain).substring(0, 8)
     };
 };
 
-export const getMaxPasswordSizeLegacy = (withSpecialChars: boolean = true, extraLong: boolean = false): number => 
+export const getMaxPasswordSizeLegacy = (withSpecialChars: boolean = true, extraLong: boolean = false): number =>
     ENTROPY_SIZE_LEGACY * calcRoundsLegacy(withSpecialChars ? EXTENDED_MAP : BASIC_MAP, extraLong);
 
 const derivePasswordLegacy = (entropy: MasterEntropy, domain: string, size: number, iteration: number, useSpecialCharacters: boolean, allowExtraLongPasswords: boolean): string => {
@@ -96,7 +102,7 @@ const derivePasswordLegacy = (entropy: MasterEntropy, domain: string, size: numb
 
     let hash = sha256(`${DERIVE_PREFIX}/${entropy.legacyDerivationInput}/${iteration}/${domain}`);
     let pw = '';
-    
+
     for (var i = 0; i < ENTROPY_SIZE_LEGACY; i++) {
         var x = parseInt(hash.substring(i * ENTROPY_SIZE_LEGACY, (i + 1) * ENTROPY_SIZE_LEGACY), 16);
         for (var j = 0; j < rounds; j++) {
@@ -110,25 +116,7 @@ const derivePasswordLegacy = (entropy: MasterEntropy, domain: string, size: numb
 };
 
 const derivePasswordModern = async (entropy: MasterEntropy, domain: string, size: number, iteration: number, useSpecialCharacters: boolean): Promise<string> => {
-    const encoder = new TextEncoder();
-    const buffer = await crypto.subtle.deriveBits(
-        {
-            name: 'HKDF',
-            hash: 'SHA-256',
-            salt: encoder.encode(DERIVE_PREFIX),
-            info: encoder.encode(`${iteration}/${domain}`)
-        },
-        await crypto.subtle.importKey(
-            'raw',
-            hexToBuffer(entropy.derivationInput),
-            { name: 'HKDF' },
-            false,
-            ['deriveBits']
-        ),
-        size * 4 * 8
-    );
-
-    const bytes = new Uint8Array(buffer);
+    const bytes = new Uint8Array(await hkdfDeriveBytes(size * 4, [DERIVE_PREFIX, `${iteration}/${domain}`], entropy));
 
     const map = useSpecialCharacters ? EXTENDED_MAP : BASIC_MAP;
     const mapLength = map.length;
@@ -147,4 +135,7 @@ const derivePasswordModern = async (entropy: MasterEntropy, domain: string, size
 
 export const derivePassword = async (entropy: MasterEntropy, domain: string, size: number, iteration: number = 1, useSpecialCharacters: boolean = true, allowExtraLongPasswords: boolean = false, legacyDerivation: boolean = false): Promise<string> =>
     legacyDerivation ? derivePasswordLegacy(entropy, domain, size, iteration, useSpecialCharacters, allowExtraLongPasswords)
-                     : await derivePasswordModern(entropy, domain, size, iteration, useSpecialCharacters);
+        : await derivePasswordModern(entropy, domain, size, iteration, useSpecialCharacters);
+
+export const deriveTotpKey = async (entropy: MasterEntropy, domain: string, size: number): Promise<Uint8Array> =>
+    new Uint8Array(await hkdfDeriveBytes(size, [TOTP_KEY_PREFIX, domain], entropy));

@@ -3,10 +3,12 @@ import { PasswordChecksumProvider } from '../contexts/PasswordChecksumContext.co
 import { PageContextProvider } from '../contexts/PageContext.component';
 import { PasswordContext, PasswordContextProvider } from '../contexts/PasswordContext.component';
 import { ConfigurationContext, ConfigurationContextProvider } from '../contexts/ConfigurationContext.component';
+import { TotpContextProvider } from '../contexts/TotpContext.component';
 import { DomainPicker } from '../domainpicker/DomainPicker.component';
 import { MasterPassword } from '../masterpassword/MasterPassword.component';
 import { DerivationOptions } from '../derivationoptions/DerivationOptions.component';
 import { PasswordGenerator } from '../passwordgenerator/PasswordGenerator.component';
+import { Totp } from '../totp/Totp.component';
 import { useState, useRef, useEffect, useContext } from 'react';
 import { BackupOptions } from '../backupoptions/BackupOptions.component';
 import { UIGroup } from '../uiutils/UIGroup.component';
@@ -33,6 +35,7 @@ const PopupComponent: React.FC = () => {
             {storage.totalConfigurations !== undefined ? <>
                 <DomainPicker />
                 <DerivationOptions showBackupOptions={showBackupOptionsTrigger} />
+                <Totp />
                 <PasswordGenerator />
                 {showBackupOptions ? (
                     <BackupOptions />
@@ -53,7 +56,9 @@ export const Popup: React.FC = () => {
             <PageContextProvider>
                 <PasswordContextProvider>
                     <ConfigurationContextProvider>
-                        <PopupComponent />
+                        <TotpContextProvider>
+                            <PopupComponent />
+                        </TotpContextProvider>
                     </ConfigurationContextProvider>
                 </PasswordContextProvider>
             </PageContextProvider>
