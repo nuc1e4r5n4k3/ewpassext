@@ -39,11 +39,13 @@ export const generateAuthenticationDomainCandidates = (input: string): string[] 
  *
  *  Returns `undefined` if no candidate matches, or if `input` is empty.
  */
-export const findDomainSuggestion = async (entropy: MasterEntropy, configs: Configuration, input: string): Promise<string | undefined> => {
+export const findDomainSuggestion = async (entropy: MasterEntropy, configs: Configuration, input: string, abortSignal?: AbortSignal): Promise<string | undefined> => {
     for (const candidate of generateAuthenticationDomainCandidates(input)) {
         const ids = await getDomainIds(entropy, candidate);
         if (ids.legacyId in configs || ids.id in configs) {
             return candidate;
+        } else if (abortSignal?.aborted) {
+            break;
         }
     }
     return undefined;

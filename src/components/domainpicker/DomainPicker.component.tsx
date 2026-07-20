@@ -12,6 +12,8 @@ interface SelectOption {
     label: string;
 };
 
+const WAIT_BEFORE_DOMAIN_SEARCH_MS = 200;
+
 const toSelectOption = (value: string): SelectOption => {
     return { value: value, label: value }
 };
@@ -36,7 +38,9 @@ export const DomainPicker: React.FC = () => {
     const [selectedDomain, setSelectedDomain] = useState<string>();
     const [showDeleteConfig, setShowDeleteConfig] = useState<boolean>(false);
     const [showDomainInput, setShowDomainInput] = useState<boolean>(false);
-    const [enteredDomain, setEnteredDomain] = useState<string>();
+    const [domainToSelect, setDomainToSelect] = useState<string>();
+    const [currentInput, setCurrentInput] = useState<string>();
+    const [suggestion, setSuggestion] = useState<string>();
     const [isSelectedDomainConfigured, setIsSelectedDomainConfigured] = useState<boolean>(false);
 
     /**
@@ -69,7 +73,7 @@ export const DomainPicker: React.FC = () => {
      */
     useEffect(() => {
         if (!showDomainInput)
-            setEnteredDomain('');
+            setDomainToSelect('');
     }, [showDomainInput])
 
     /**
@@ -132,10 +136,30 @@ export const DomainPicker: React.FC = () => {
     };
 
     const trySelectCustomDomain = useCallback(() => {
-        if (enteredDomain) {
-            selectCustomDomain(enteredDomain);
+        if (domainToSelect) {
+            selectCustomDomain(domainToSelect);
         }
-    }, [enteredDomain]);
+    }, [domainToSelect]);
+
+    useEffect(() => {
+        const suggest = storage?.findDomainSuggestion;
+
+        if (!currentInput || currentInput === domainToSelect || !suggest) {
+            setSuggestion(undefined);
+            return;
+        }
+
+        const abort = new AbortController();
+        const timer = setTimeout(async () => {
+            const hit = await suggest(currentInput, abort.signal);
+            if (!abort.signal.aborted) setSuggestion(hit);
+        }, WAIT_BEFORE_DOMAIN_SEARCH_MS);
+
+        return () => {
+            abort.abort();
+            clearTimeout(timer);
+        };
+    }, [currentInput, domainToSelect, storage]);
 
     return (
         <UIGroup title='Domain'>
@@ -156,9 +180,23 @@ export const DomainPicker: React.FC = () => {
                         <input type='button' value='🗁' disabled={!passwordContext?.derivationEntropy} className={classes.openButton} onClick={() => setShowDomainInput(true)}></input>
                     </div>
                     {showDomainInput ? (
-                        <div className={classes.selectorLine}>
-                            <ValidatedInput label="Domain:" autofocus={true} validate={domainHasConfig} onSelectValue={selectCustomDomain} onUpdateValue={setEnteredDomain} />
-                        </div>
+                        <>
+                            <div className={classes.selectorLine}>
+                                <ValidatedInput
+                                    autofocus={true}
+                                    label="Domain:"
+                                    suggestion={suggestion}
+                                    onSelectValue={selectCustomDomain} validate={domainHasConfig}
+                                    onValidatedValueUpdate={setDomainToSelect} onRawInputUpdate={setCurrentInput}
+                                />
+                            </div>
+                            {suggestion && suggestion !== currentInput ? (
+                                <div className={classes.selectorLine}>
+                                    <div className={classes.suggestion}>Found <em>{suggestion}</em></div>
+                                    <div className={classes.suggestion}>(TAB to select)</div>
+                                </div>
+                            ) : null}
+                        </>
                     ) : (
                         <>
                             {!!storage.currentDomainConfig && storage.removeConfigForCurrentDomain && showDeleteConfig ? (

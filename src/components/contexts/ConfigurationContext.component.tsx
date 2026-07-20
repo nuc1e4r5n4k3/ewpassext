@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Configuration, IDomainConfig, load, store, serializeAll as exportConfigurations, importBackup } from '../../lib/storage';
 import { getDomainIds } from '../../lib/derivation';
+import { findDomainSuggestion as doFindDomainSuggestion } from '../../lib/domainSearch';
 import { PasswordContext } from './PasswordContext.component';
 
 
@@ -19,6 +20,7 @@ export interface IConfigurationContext {
     clearSelection?: () => void;
     findDomainWithConfig?: (domains: string[]) => Promise<string | undefined>;
     checkDomainHasConfig?: (domain: string) => Promise<boolean>;
+    findDomainSuggestion?: (input: string, abortSignal?: AbortSignal) => Promise<string | undefined>;
 
     exportConfigurations?: () => Promise<string>;
     importConfigurations?: (config: string, clearExisting: boolean) => Promise<number>;
@@ -114,6 +116,12 @@ export const ConfigurationContextProvider: React.FC<Props> = ({ children }) => {
         return !!domainConfigs && (ids.legacyId in domainConfigs || ids.id in domainConfigs);
     };
 
+    const findDomainSuggestion = async (input: string, abortSignal?: AbortSignal): Promise<string | undefined> => {
+        if (!passwordContext?.derivationEntropy) return undefined;
+        if (!domainConfigs) return undefined;
+        return doFindDomainSuggestion(passwordContext.derivationEntropy, domainConfigs, input, abortSignal);
+    };
+
     const importConfigurations = async (config: string, clearExisting: boolean): Promise<number> => {
         const count = await importBackup(config, clearExisting);
         const loaded = await load<Configuration>('metadata') || {};
@@ -144,6 +152,7 @@ export const ConfigurationContextProvider: React.FC<Props> = ({ children }) => {
             },
             findDomainWithConfig: findDomainWithConfig,
             checkDomainHasConfig: checkDomainHasConfig,
+            findDomainSuggestion: findDomainSuggestion,
 
             exportConfigurations: exportConfigurations,
             importConfigurations: importConfigurations
