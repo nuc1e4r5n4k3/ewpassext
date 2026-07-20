@@ -9,7 +9,7 @@ export enum MatchState {
 export namespace MatchState {
     export function from(matches: boolean): MatchState {
         return matches ? MatchState.Match : MatchState.NoMatch;
-    }
+    };
 };
 
 
@@ -21,13 +21,15 @@ const MatchStateIcon: { [key: string]: string } = {
 type Props = {
     label: string;
     autofocus?: boolean;
+    suggestion?: string;
 
     validate: (value: string) => Promise<boolean>;
-    onUpdateValue?: (value?: string) => void;
+    onValidatedValueUpdate?: (value?: string) => void;
+    onRawInputUpdate?: (value?: string) => void;
     onSelectValue: (value: string) => void;
 }
 
-export const ValidatedInput: React.FC<Props> = ({ label, autofocus, validate, onSelectValue, onUpdateValue }) => {
+export const ValidatedInput: React.FC<Props> = ({ label, autofocus, validate, suggestion, onSelectValue, onRawInputUpdate, onValidatedValueUpdate }) => {
     const [value, setValue] = useState<string>('');
     const [matchState, setMatchState] = useState<MatchState | undefined>();
 
@@ -40,8 +42,14 @@ export const ValidatedInput: React.FC<Props> = ({ label, autofocus, validate, on
     }, [value, matchState]);
 
     useEffect(() => {
-        if (onUpdateValue)
-            onUpdateValue(matchState === MatchState.Match ? value : undefined);
+        if (onRawInputUpdate) {
+            onRawInputUpdate(value ? value : undefined);
+        }
+    }, [value]);
+
+    useEffect(() => {
+        if (onValidatedValueUpdate)
+            onValidatedValueUpdate(matchState === MatchState.Match ? value : undefined);
     }, [matchState, value]);
 
     useEffect(() => {
@@ -50,7 +58,7 @@ export const ValidatedInput: React.FC<Props> = ({ label, autofocus, validate, on
         } else {
             setMatchState(undefined);
         }
-    }, [value]);
+    }, [value, validate]);
 
     return (
         <>
@@ -58,9 +66,16 @@ export const ValidatedInput: React.FC<Props> = ({ label, autofocus, validate, on
                 <p>{label}</p>
             </div>
             <input
+                value={value}
                 autoFocus={autofocus}
-                onChange={e => setValue(e.target.value)}
+                onChange={e => setValue(e.target.value.trim())}
                 onBlur={trySelectValue}
+                onKeyDown={e => {
+                    if (e.key === 'Tab') {
+                        if (suggestion) setValue(suggestion);
+                        e.preventDefault();
+                    }
+                }}
                 onKeyUp={e => {
                     if (e.key === 'Enter') {
                         trySelectValue();

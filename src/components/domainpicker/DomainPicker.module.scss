@@ -58,3 +58,25 @@
         background-color: #dc2626;
     }
 }
+
+.suggestion {
+    margin-top: 6px;
+    margin-bottom: 4px;
+    font-size: 75%;
+    color: #475569;
+
+    em {
+        font-weight: bold;
+        font-style: italic;
+    }
+
+    &:first-child {
+        margin-left: 72px;
+    }
+
+    &:not(:first-child) {
+        width: 85px;
+        margin-left: 6px;
+        margin-right: -85px;
+    }
+}
