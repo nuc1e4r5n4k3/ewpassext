@@ -42,6 +42,8 @@ Vitest is configured in `vite.config.ts` (`test.environment: 'happy-dom'`). `@te
 
 `src/lib/derivation.test.ts` covers both derivation paths: golden-value tests for the legacy path (4 combinations of special-chars/extra-long) and the modern path (golden values, determinism, length, charset membership, flag-ignoring, bias sanity).
 
+The injection-side modules have their own coverage: `src/lib/inputfieldtypes.test.ts` (input classification and char-box group injection), `src/lib/documentsearcher.test.ts` (active-input lookup across documents and iframes), and `src/lib/totpfielddetect.test.ts` (conservative TOTP-field signal detection).
+
 ## Code structure
 
 | Directory | Purpose |
@@ -50,10 +52,10 @@ Vitest is configured in `vite.config.ts` (`test.environment: 'happy-dom'`). `@te
 | `src/components/contexts/` | React context providers (`ConfigurationContext`, `PasswordContext`, `PageContext`, `PasswordChecksumContext`, `TotpContext`) |
 | `src/components/totp/` | TOTP UI (`Totp`) |
 | `src/components/backupoptions/` | Backup/restore UI (`BackupOptions`) |
-| `src/lib/` | Core logic: derivation (`derivation.ts`, `hexutils.ts`), storage, domain helpers, TOTP (`totp.ts`), base32 (`base32.ts`), XOR encryption (`encryption.ts`) |
-| `src/internalapi/` | Types/requests/handler for popup ↔ content script IPC |
+| `src/lib/` | Core logic: derivation (`derivation.ts`, `hexutils.ts`), storage, domain helpers, TOTP (`totp.ts`), base32 (`base32.ts`), XOR encryption (`encryption.ts`), input-field classification & value injection (`inputfieldtypes.ts`, `documentsearcher.ts`), TOTP-field detection (`totpfielddetect.ts`) |
+| `src/internalapi/` | Types/requests/handler for popup ↔ content script ↔ service worker IPC |
 | `src/serviceworker/` | Chrome background service worker logic |
-| `src/scriptinjections/` | Content script injection code |
+| `src/scriptinjections/` | Content script injection code (`contentscript/index.ts`) + popup→page `InjectionProxy` bridge (`proxy.ts`) |
 | `public/manifest.json` | Extension manifest (V3, Chromium) |
 
 **Entry points:**
@@ -109,27 +111,31 @@ Secret input is parsed by `parseTotpConfiguratonString(input)` in `src/lib/totp.
 
 The in-memory TOTP state for the popup is exposed to the UI via `TotpContext` (`src/components/contexts/TotpContext.component.tsx`), which nests inside `ConfigurationContextProvider` (it consumes both `PasswordContext` and `ConfigurationContext`).
 
+**Injecting the code.** The MFA section in the popup shows an **Inject** button (next to **Copy**) whenever an editable input is focused in the page. Password and TOTP injection share one path: `PageContext` constructs an `InjectionProxy` (`src/scriptinjections/proxy.ts`) per tab, and its `injectPassword` / `injectTotp` methods ensure `contentscript.js` is loaded and then invoke the functions planted on the page by the content script (`ewpassext.injectPassword` / `injectTotp` in `src/scriptinjections/contentscript/index.ts`). Value injection lives in `src/lib/inputfieldtypes.ts` (`injectValue` / `singleControlInjectValue`), with OTP-style inputs made of individual single-character boxes supported by distributing the code one character per box; the active field is located by `DocumentSearcher.getActiveInputInDocumentAndIFrames` (`src/lib/documentsearcher.ts`).
+
+**Auto-injection on focus.** The content script's focus handling (`handleInputSelected` in `src/scriptinjections/contentscript/index.ts`) treats password and TOTP fields alike. `detectTotpField` in `src/lib/totpfielddetect.ts` returns a `TotpSignal`: `'autocomplete'` when the field declares itself via `autocomplete="one-time-code"`/`"otp"` (treated as definite, the code is auto-injected), else `'string'` for weaker signals — word tokens such as otp/2fa/mfa/otc and distinctive substrings like verification/authenticator/twofactor, matched against id/name/class/placeholder/aria-label and label text — which only open the popup. SMS fields are deliberately never matched. The code is fetched via the `getTotpCode` request (`src/internalapi/requests.ts`) and resolved by `src/serviceworker/totp.ts`, which reuses the now-exported `findDomainMatch` (`src/serviceworker/derivedpassword.ts`), `decryptTotpSecret`, and `generateTotp`; nothing is injected when no secret is configured, the focused domain has no config match, or the master entropy has expired. The same `handleInputSelected` logic also runs once at content-script startup on any input already focused when the script was injected (including focus inside an iframe), so a focused-but-not-yet-handled field still gets the treatment.
+
 ## Extension privileges
 
 The manifest (`public/manifest.json`) requests the following permissions and host permissions. Each is listed with the code that consumes it.
 
 ### `permissions`
 
-- **`activeTab`** — Grants temporary access to the currently active tab when the user invokes the popup. Consumed via `browser.tabs.query({ windowId: ..., active: true })` in `src/components/contexts/PageContext.component.tsx:10` to read the active tab's `id` and `url`, which the popup then uses to derive the domain-specific password and target injection.
+- **`activeTab`** — Grants temporary access to the currently active tab when the user invokes the popup. Consumed via `browser.tabs.query({ windowId: ..., active: true })` in `src/components/contexts/PageContext.component.tsx:12` to read the active tab's `id` and `url`, which the popup then uses to derive the domain-specific password and target injection.
 - **`alarms`** — Used in `src/serviceworker/storage.ts` to expire the in-memory master-password entropy. `alarms.create(CLEAR_PASSWORD_ALARM, { delayInMinutes: ... })` at line 40 schedules a delayed wipe; `alarms.onAlarm` at line 23 fires the wipe when the alarm elapses, ensuring derived entropy isn't kept in session storage beyond the user-requested TTL.
-- **`scripting`** — Backs `scripting.executeScript`, which injects `contentscript.js` and invokes the injected `injectPassword` function on the page. Two call sites:
-  - `src/serviceworker/index.ts:11` — auto-injects the content script into the tab whenever a top-level `https://` navigation completes (driven by `webNavigation.onCompleted` above it).
-  - `src/components/passwordgenerator/PasswordGenerator.component.tsx:43,47` — when the user clicks "Inject automatically", the popup injects `contentscript.js` into the active tab and then calls `(window as InjectionContextHolder).ewpassext!.injectPassword!(password)`.
+- **`scripting`** — Backs `scripting.executeScript`, which injects `contentscript.js` into tabs and invokes the functions it plants on the page (`ewpassext.injectPassword` / `injectTotp` / `getActiveInputType`). Call sites:
+  - `src/serviceworker/index.ts:12` — auto-injects the content script into the tab whenever a top-level `https://` navigation completes (driven by `webNavigation.onCompleted` above it).
+  - `src/scriptinjections/proxy.ts` — `InjectionProxy` (constructed per-tab by `PageContextProvider` in `src/components/contexts/PageContext.component.tsx`) runs `executeScript` to ensure `contentscript.js` is loaded and then to invoke the mounted `ewpassext` functions on the active tab. This is the path behind the popup's "Inject automatically" (password) and MFA-section "Inject" (code) buttons.
 - **`storage`** — Persistence layer for configuration and ephemeral derivation state, accessed via `chrome.storage`/`browser.storage` aliased in `src/lib/browsercompat.ts:5`:
   - `storage.local` — persists the per-domain configuration map under the `metadata` key across browser sessions; see `load`/`store` in `src/lib/storage.ts:20,36`.
   - `storage.session` — holds the derived master-password entropy for the current session only (cleared on browser close and by the alarms mechanism above); see `src/serviceworker/storage.ts:18,20`.
 - **`webNavigation`** — Reacts to page navigations:
-  - `src/serviceworker/index.ts:7` — `webNavigation.onCompleted` triggers auto-injection of the content script into newly-loaded HTTPS pages.
-  - `src/components/contexts/PageContext.component.tsx:51` — `webNavigation.onCommitted` refreshes the popup's cached tab/domain info when the active tab navigates.
+  - `src/serviceworker/index.ts:8` — `webNavigation.onCompleted` triggers auto-injection of the content script into newly-loaded HTTPS pages.
+  - `src/components/contexts/PageContext.component.tsx:59` — `webNavigation.onCommitted` refreshes the popup's cached tab/domain info when the active tab navigates.
 
 ### `host_permissions`
 
-- **`https://*/*`** — Required so the `scripting.executeScript` calls above can inject `contentscript.js` and run `injectPassword` on any HTTPS page. Also gates `activeTab` access to the URL of the active HTTPS tab.
+- **`https://*/*`** — Required so the `scripting.executeScript` calls above can inject `contentscript.js` and run the planted `ewpassext` injection functions on any HTTPS page. Also gates `activeTab` access to the URL of the active HTTPS tab.
 
 ### `optional_permissions`
 
