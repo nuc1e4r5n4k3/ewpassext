@@ -10,15 +10,15 @@
         "@types/firefox-webext-browser": "^143.0.0",
         "@types/jest": "^30.0.0",
         "@types/node": "^26.1.0",
-        "@types/node-sass": "^4.11.2",
+        "@types/node-sass": "^4.11.8",
         "@types/react": "^19.2.17",
         "@types/react-dom": "^19.2.3",
-        "@types/react-numeric-input": "^2.2.4",
-        "@types/sha256": "^0.2.0",
+        "@types/react-numeric-input": "^2.2.7",
+        "@types/sha256": "^0.2.2",
         "react": "^19.2.7",
         "react-dom": "^19.2.7",
         "react-numeric-input": "^2.2.3",
-        "react-select": "^5.3.0",
+        "react-select": "^5.10.2",
         "sass": "^1.101.0",
         "sha256": "^0.2.0",
         "typescript": "^6.0.3",
@@ -54,6 +54,6 @@
         "@vitejs/plugin-react": "^6.0.3",
         "happy-dom": "^20.10.6",
         "vite": "^8.1.3",
-        "vitest": "^4.1.9"
+        "vitest": "^4.1.11"
     }
 }
