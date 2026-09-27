@@ -47,9 +47,8 @@ context.injectTotp = (code: string) => {
     new DocumentSearcher().injectIntoActiveInputInDocumentAndIFrames(code, ['textinput', 'passwordinput'])
 };
 
-document.addEventListener('focus', async (event) => {
-    const target = event.target as HTMLElement;
 
+const handleInputSelected = async (target: HTMLElement) => {
     if (isPasswordField(target)) {
         const input = target as HTMLInputElement;
         if (!await autoInjectPassword(input)) {
@@ -67,4 +66,12 @@ document.addEventListener('focus', async (event) => {
     } else if (signal === 'string') {
         tryOpenPopup(target as HTMLInputElement);
     }
-}, true);
+};
+
+document.addEventListener('focus', event => handleInputSelected(event.target as HTMLElement), true);
+
+(() => {
+    const element = new DocumentSearcher().getActiveInputInDocumentAndIFrames();
+    if (element && element instanceof HTMLElement)
+        handleInputSelected(element);
+})();
