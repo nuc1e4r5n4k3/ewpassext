@@ -1,22 +1,8 @@
-import { getDerivedPassword, getPasswordHash, openExtensionPopup } from '../../internalapi/requests';
+import { getDerivedPassword, getTotpCode, openExtensionPopup } from '../../internalapi/requests';
 import { DocumentSearcher } from '../../lib/documentsearcher';
+import { getElementInputType, isPasswordField, singleControlInjectValue } from '../../lib/inputfieldtypes';
+import { detectTotpField } from '../../lib/totpfielddetect';
 import { getInjectionContext } from '../context';
-
-
-const setInputValue = (input: HTMLInputElement, value: string) => {
-    const lastValue = input.value;
-    input.value = value;
-
-    const event = new Event('input', { bubbles: true });
-    // React 15
-    (event as any).simulated = true;
-    // React 16
-    let tracker = (input as any)._valueTracker;
-    if (tracker) {
-        tracker.setValue(lastValue);
-    }
-    input.dispatchEvent(event);
-};
 
 const tryOpenPopup = (input: HTMLInputElement) => {
     let ctx = getInjectionContext();
@@ -29,27 +15,63 @@ const tryOpenPopup = (input: HTMLInputElement) => {
     }
 };
 
-const autoInjectPassword = async (input: HTMLInputElement) => {
-    const response = await getDerivedPassword();
-    if (response.password !== undefined && !input.value) {
-        setInputValue(input, response.password);
+const doAutoInject = async (input: HTMLInputElement, getValue: () => Promise<string | undefined>): Promise<boolean> => {
+    if (input.value) return false;
+
+    const value = await getValue();
+    if (value !== undefined) {
+        singleControlInjectValue(value, input);
         return true;
     }
     return false;
 };
 
+const autoInjectPassword = async (input: HTMLInputElement) =>
+    await doAutoInject(input, async () => (await getDerivedPassword()).password);
 
-getInjectionContext().injectPassword = (password: string) => {
+const autoInjectTotp = async (input: HTMLInputElement) =>
+    await doAutoInject(input, async () => (await getTotpCode()).code);
+
+
+const context = getInjectionContext();
+
+context.getActiveInputType = () => getElementInputType(new DocumentSearcher().getActiveInputInDocumentAndIFrames() || null);
+
+context.injectPassword = (password: string) => {
     for (let input of new DocumentSearcher().getPasswordInputsInDocumentAndIFrames()) {
-        setInputValue(input, password);
+        singleControlInjectValue(password, input);
     }
 };
 
-document.addEventListener('focus', async (event) => {
-    if (event.target && (event.target as any).type === 'password') {
-        const input = event.target as HTMLInputElement;
+context.injectTotp = (code: string) => {
+    new DocumentSearcher().injectIntoActiveInputInDocumentAndIFrames(code, ['textinput', 'passwordinput'])
+};
+
+
+const handleInputSelected = async (target: HTMLElement) => {
+    if (isPasswordField(target)) {
+        const input = target as HTMLInputElement;
         if (!await autoInjectPassword(input)) {
             tryOpenPopup(input);
         }
+        return;
     }
-}, true);
+
+    const signal = detectTotpField(target);
+    if (signal === 'autocomplete') {
+        const input = target as HTMLInputElement;
+        if (!await autoInjectTotp(input)) {
+            tryOpenPopup(input);
+        }
+    } else if (signal === 'string') {
+        tryOpenPopup(target as HTMLInputElement);
+    }
+};
+
+document.addEventListener('focus', event => handleInputSelected(event.target as HTMLElement), true);
+
+(() => {
+    const element = new DocumentSearcher().getActiveInputInDocumentAndIFrames();
+    if (element && element instanceof HTMLElement)
+        handleInputSelected(element);
+})();

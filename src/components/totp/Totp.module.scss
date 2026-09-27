@@ -151,3 +151,16 @@
         cursor: not-allowed;
     }
 }
+
+.buttonRow {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.buttonSmall {
+    width: 86px;
+    height: 30px;
+    margin: 0px;
+}

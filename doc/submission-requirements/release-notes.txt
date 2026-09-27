@@ -1,0 +1,7 @@
+Make it easier to fill in the two-step verification code from your authenticator app.
+
+For domains with an MFA code configured, the extension can now type the code into a login form, just like it fills in your password. When you open the popup on a login page, the MFA section shows an Inject button next to Copy. This also works with the split-up "one digit per box" code inputs many sites use; the code is distributed one character per box.
+
+The code is even filled in automatically when you focus a field that clearly asks for one. Fields that declare themselves as one-time-code fields (autocomplete="one-time-code" or "otp") get the code injected on focus. Fields that merely look like a code field — such as a label or placeholder with "verification", "authenticator", or similar — open the popup with the code ready to copy or inject instead, so the extension never types into a field it is not sure about. Codes sent by SMS or email are deliberately left alone, since the extension can only work with codes it can reproduce on your own device.
+
+This also covers two edge cases: a code field that was already focused when the extension was loaded into the page, and code fields sitting inside embedded frames — both get the same treatment.

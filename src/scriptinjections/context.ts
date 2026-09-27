@@ -1,3 +1,4 @@
+import { InputFieldType } from "../lib/inputfieldtypes";
 
 export type InjectionContext = {
     hookedInputs: HTMLInputElement[];
@@ -5,7 +6,10 @@ export type InjectionContext = {
     lastPopupTime: number;
     pageChanges: number;
 
+    getActiveInputType?: () => InputFieldType;
+
     injectPassword?: (password: string) => void;
+    injectTotp?: (code: string) => void;
 };
 
 export type InjectionContextHolder = {

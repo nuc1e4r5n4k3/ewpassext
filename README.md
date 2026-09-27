@@ -22,12 +22,12 @@ A legacy derivation path (plain SHA-256) is retained alongside the modern KDFs s
 
 - **Domain picker** — select which domain the password is derived for, with automatic parent-domain matching (e.g. `login.example.com` → `example.com`).
 - **Configurable derivation** — per-domain password length, iteration count, special-character usage, and (legacy only) an extra-long mode.
-- **Automatic injection** — on HTTPS pages, a content script detects focused password fields and either auto-fills the derived password (if the master entropy is still in session) or opens the popup so you can enter your master password.
+- **Automatic injection** — on HTTPS pages, a content script detects focused password and MFA-code (TOTP) fields. For password fields it either auto-fills the derived password (if the master entropy is still in session) or opens the popup so you can enter your master password. For fields that plausibly expect a one-time code, it auto-injects the current code when the field reliably declares itself (via `autocomplete="one-time-code"`/`"otp"`), or opens the popup on weaker signals; SMS-related fields are deliberately ignored.
 - **Backup & restore** — export and import the per-domain configuration map via the clipboard. Backups contain only derivation parameters, never passwords.
 - **Checksum** — a short 2-character checksum derived from the master entropy is displayed (and optionally stored) so the popup can detect whether the entered master password matches the one used to create the stored configuration.
 - **Multiple master passwords** — although designed around a single master password, the extension supports using more than one. Each master password produces its own independent set of domain configurations, and the extension automatically detects the right configs for whichever password is in session. The only caveat: the checksum feature has a single slot, so with multiple master passwords you leave it unset and verify the 2-character value yourself.
 - **Time-limited session** — the derived master entropy is held in `storage.session` for at most 180 seconds, then wiped by an `alarms`-driven timer. You can also clear it immediately from the popup.
-- **MFA codes (TOTP)** — optional, per-domain time-based one-time passwords shown in the popup alongside the site password. The TOTP secret is stored only as encrypted ciphertext; the code is recomputed on demand and is never persisted.
+- **MFA codes (TOTP)** — optional, per-domain time-based one-time passwords shown in the popup alongside the site password. TOTP secrets are stored only as encrypted ciphertext; codes are recomputed on demand and never persisted, and can be copied or injected directly into a focused one-time-code field on the page.
 
 ## AI disclosure
 
@@ -78,7 +78,9 @@ Tick the checkbox to reveal a `Secret:` input below the MFA Code panel. Paste ei
 
 #### Using the code
 
-The popup displays the current 6-digit code with a countdown progress bar that fills as the 30 second window elapses. Click **_Copy to clipboard_** to copy the code (this also closes the popup). The code is recomputed locally every period; no network request is made.
+The popup displays the current 6-digit code with a countdown progress bar that fills as the 30 second window elapses. Click **_Copy to clipboard_** to copy the code (this also closes the popup). If an editable input is focused in the page, the section instead shows two buttons, **_Copy_** and **_Inject_**: clicking **_Inject_** fills the code into the focused field — including OTP-style inputs built from individual single-character boxes, filling one character per box — and closes the popup. The code is recomputed locally every period; no network request is made.
+
+Focusing a field on a page also triggers the same auto-injection behaviour that password fields have. When the focused field reliably declares itself as a one-time-code input (via `autocomplete="one-time-code"` or `autocomplete="otp"`), the current code is injected automatically — provided your master entropy is in session and the current domain has MFA enabled. For weaker signals, such as an `otp`/`2fa`/`mfa` token or a `verification`/`authenticator` label in the field's id, name, class, placeholder, aria-label, or label text, the popup simply opens with the MFA section visible so you can copy or inject the code manually. SMS-related fields are intentionally ignored, since the extension cannot reproduce codes delivered to your phone.
 
 #### Decrypting the secret
 
@@ -254,11 +256,11 @@ The Chrome manifest carries a `"key"` field (the Chrome Web Store publisher key)
 | `src/components/masterpassword/` | Master password entry UI |
 | `src/components/passwordgenerator/` | Password generation, copy, and injection UI |
 | `src/components/checksum/` | Master password checksum UI |
-| `src/components/totp/` | TOTP code display, secret entry, and clipboard-copy UI |
-| `src/lib/` | Core logic: derivation (`derivation.ts`, `hexutils.ts`), storage, domain helpers, TOTP (`totp.ts`), base32 (`base32.ts`), XOR encryption (`encryption.ts`) |
-| `src/internalapi/` | Types, requests, and handler for popup ↔ content script ↔ service worker IPC |
-| `src/serviceworker/` | Background service worker logic |
-| `src/scriptinjections/` | Content script injection code |
+| `src/components/totp/` | TOTP code display, secret entry, and copy/inject UI |
+| `src/lib/` | Core logic: derivation (`derivation.ts`, `hexutils.ts`), storage, domain helpers, TOTP (`totp.ts`), base32 (`base32.ts`), XOR encryption (`encryption.ts`), input-field classification & value injection (`inputfieldtypes.ts`, `documentsearcher.ts`), TOTP-field detection (`totpfielddetect.ts`) |
+| `src/internalapi/` | Types, requests, and handler for popup ↔ content script ↔ service worker IPC (`getDerivedPassword`, `getTotpCode`, ...) |
+| `src/serviceworker/` | Background service worker logic (password derivation and TOTP-code request handlers) |
+| `src/scriptinjections/` | Content script injection code (`contentscript/index.ts`) and the popup→page `InjectionProxy` bridge (`proxy.ts`) |
 | `public/manifest.json` | Extension manifest (V3, Chromium) |
 | `firefox/` | Firefox build patch |
 
@@ -266,7 +268,7 @@ The Chrome manifest carries a `"key"` field (the Chrome Web Store publisher key)
 
 - `src/index.tsx` — popup page entrypoint (also exposes `window.storage` with `dump` / `import` / `importLegacy` for backup & restore via the developer console)
 - `src/serviceworker/index.ts` — background service worker
-- `src/scriptinjections/contentscript/index.ts` — content script
+- `src/scriptinjections/contentscript/index.ts` — content script; plants `ewpassext.injectPassword` / `injectTotp` / `getActiveInputType` on the page and drives auto-injection of passwords and TOTP codes into focused fields (via a `focus` listener plus a startup pass over any input already focused when the script was injected).
 
 Components consume React context: `ConfigurationContext`, `PasswordContext`, `PageContext`, `PasswordChecksumContext`, `TotpContext`.
 
@@ -278,9 +280,9 @@ The manifest (`public/manifest.json`) requests the following permissions and hos
 
 - **`activeTab`** — Grants temporary access to the currently active tab when the user invokes the popup. Consumed via `browser.tabs.query({ windowId: ..., active: true })` in `src/components/contexts/PageContext.component.tsx` to read the active tab's `id` and `url`, which the popup then uses to derive the domain-specific password and target injection.
 - **`alarms`** — Used in `src/serviceworker/storage.ts` to expire the in-memory master-password entropy. `alarms.create(CLEAR_PASSWORD_ALARM, { delayInMinutes: ... })` schedules a delayed wipe; `alarms.onAlarm` fires the wipe when the alarm elapses, ensuring derived entropy isn't kept in session storage beyond the user-requested TTL (180 seconds).
-- **`scripting`** — Backs `scripting.executeScript`, which injects `contentscript.js` and invokes the injected `injectPassword` function on the page. Two call sites:
+- **`scripting`** — Backs `scripting.executeScript`, which injects `contentscript.js` into tabs and invokes the functions it plants on the page (`ewpassext.injectPassword`, `injectTotp`, `getActiveInputType`). Call sites:
   - `src/serviceworker/index.ts` — auto-injects the content script into the tab whenever a top-level `https://` navigation completes (driven by `webNavigation.onCompleted` above it).
-  - `src/components/passwordgenerator/PasswordGenerator.component.tsx` — when the user clicks "Inject automatically", the popup injects `contentscript.js` into the active tab and then calls `(window as InjectionContextHolder).ewpassext!.injectPassword!(password)`.
+  - `src/scriptinjections/proxy.ts` — the `InjectionProxy`, constructed per-tab by `PageContextProvider` (`src/components/contexts/PageContext.component.tsx`), executes `scripting.executeScript` to ensure `contentscript.js` is loaded and then to invoke the mounted `ewpassext` functions on the active tab. This is the path behind the popup's "Inject automatically" (password) and MFA-section "Inject" (code) buttons.
 - **`storage`** — Persistence layer for configuration and ephemeral derivation state, accessed via `chrome.storage`/`browser.storage` aliased in `src/lib/browsercompat.ts`:
   - `storage.local` — persists the per-domain configuration map under the `metadata` key across browser sessions; see `load`/`store` in `src/lib/storage.ts`.
   - `storage.session` — holds the derived master-password entropy for the current session only (cleared on browser close and by the alarms mechanism above); see `src/serviceworker/storage.ts`.
@@ -290,7 +292,7 @@ The manifest (`public/manifest.json`) requests the following permissions and hos
 
 #### Host permissions
 
-- **`https://*/*`** — Required so the `scripting.executeScript` calls above can inject `contentscript.js` and run `injectPassword` on any HTTPS page. Also gates `activeTab` access to the URL of the active HTTPS tab.
+- **`https://*/*`** — Required so the `scripting.executeScript` calls above can inject `contentscript.js` and run the planted `ewpassext` injection functions on any HTTPS page. Also gates `activeTab` access to the URL of the active HTTPS tab.
 
 #### Optional permissions
 

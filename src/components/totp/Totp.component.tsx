@@ -1,6 +1,7 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { ConfigurationContext } from '../contexts/ConfigurationContext.component';
 import { TotpContext } from '../contexts/TotpContext.component';
+import { PageContext } from '../contexts/PageContext.component';
 import { UIGroup } from '../uiutils/UIGroup.component';
 import { parseTotpConfiguratonString, TOTP_DEFAULT_SETTINGS } from '../../lib/totp';
 import classes from './Totp.module.scss';
@@ -20,12 +21,25 @@ const EXPIRING_THRESHOLD_SECONDS = 3;
 export const Totp: React.FC = () => {
     const storage = useContext(ConfigurationContext);
     const totp = useContext(TotpContext);
+    const context = useContext(PageContext);
+    const [showInject, setShowInject] = useState<boolean>(false);
+    const [focusInject, setFocusInject] = useState<boolean>(false);
+    const injectButton = useRef<HTMLInputElement>(null);
 
     const hasSecret = !!storage.currentDomainConfig?.totpSecret;
     const code = totp?.code;
     const expiresAt = totp?.expiresAt;
 
     const [nowDeciSeconds, setNowDeciSeconds] = useState(() => Math.floor(Date.now() / 100));
+
+    useEffect(() => {
+        setShowInject(context?.focusedInputType !== undefined);
+        setFocusInject(context?.focusedInputType === 'textinput');
+    }, [context?.focusedInputType])
+
+    useEffect(() => {
+        if (code && focusInject) injectButton.current?.focus();
+    }, [focusInject, code, injectButton.current]);
 
     useEffect(() => {
         if (expiresAt === undefined) return;
@@ -43,6 +57,13 @@ export const Totp: React.FC = () => {
     const copyToClipboard = async () => {
         if (!code) return;
         navigator.clipboard.writeText(code).then(() => window.close());
+    };
+
+    const injectTotp = async () => {
+        if (!code || !context?.injection) return;
+
+        await context.injection.injectTotp(code);
+        window.close();
     };
 
     return hasSecret || !!totp?.show ? (
@@ -70,13 +91,25 @@ export const Totp: React.FC = () => {
                             </div>
                         )}
                     </div>
-                    <input
-                        type='button'
-                        value='Copy to clipboard'
-                        disabled={!code}
-                        onClick={copyToClipboard}
-                        className={classes.button}
-                    />
+                    <div className={classes.buttonRow}>
+                        <input
+                            type='button'
+                            value={showInject ? 'Copy' : 'Copy to clipboard'}
+                            disabled={!code}
+                            onClick={copyToClipboard}
+                            className={showInject ? `${classes.button} ${classes.buttonSmall}` : classes.button}
+                        />
+                        {showInject ? <input
+                            ref={injectButton}
+                            type='button'
+                            value='Inject'
+                            disabled={!code}
+                            autoFocus={focusInject}
+                            onClick={injectTotp}
+                            className={`${classes.button} ${classes.buttonSmall}`}
+                        /> : <></>
+                        }
+                    </div>
                 </>
             ) : (
                 <>
@@ -87,7 +120,8 @@ export const Totp: React.FC = () => {
                         </div>
                     </div>
                 </>
-            )}
-        </UIGroup>
+            )
+            }
+        </UIGroup >
     ) : (<></>);
 };
