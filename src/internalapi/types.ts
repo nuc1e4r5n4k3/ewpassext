@@ -1,6 +1,6 @@
 import { MasterEntropy } from "../lib/derivation";
 
-export type MessageType = 'keepAlive'|'openPopup'|'getPasswordHash'|'storePasswordHash'|'getDerivedPassword';
+export type MessageType = 'keepAlive'|'openPopup'|'getPasswordHash'|'storePasswordHash'|'getDerivedPassword'|'getTotpCode';
 
 export interface Message {
     type: MessageType
@@ -44,4 +44,13 @@ export interface GetDerivedPasswordRequest extends Request {
 export interface GetDerivedPasswordResponse extends Response {
     type: 'getDerivedPassword';
     password: string|undefined;
+};
+
+export interface GetTotpCodeRequest extends Request {
+    type: 'getTotpCode';
+};
+
+export interface GetTotpCodeResponse extends Response {
+    type: 'getTotpCode';
+    code: string|undefined;
 };

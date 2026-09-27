@@ -3,6 +3,7 @@ import { OpenPopupRequest, OpenPopupResponse } from '../internalapi/types';
 import { action, runtime, scripting, webNavigation } from '../lib/browsercompat';
 import {} from './derivedpassword';
 import {} from './storage';
+import {} from './totp';
 
 webNavigation.onCompleted.addListener(e => {
     if (e.url.substring(0, 8) !== 'https://' || e.frameId) {

@@ -1,6 +1,6 @@
 import { runtime } from '../lib/browsercompat';
 import { MasterEntropy } from '../lib/derivation';
-import { GetDerivedPasswordRequest, GetDerivedPasswordResponse, GetPasswordHashRequest, GetPasswordHashResponse, OpenPopupRequest, OpenPopupResponse, Request, Response, StorePasswordHashRequest, StorePasswordHashResponse } from './types';
+import { GetDerivedPasswordRequest, GetDerivedPasswordResponse, GetPasswordHashRequest, GetPasswordHashResponse, GetTotpCodeRequest, GetTotpCodeResponse, OpenPopupRequest, OpenPopupResponse, Request, Response, StorePasswordHashRequest, StorePasswordHashResponse } from './types';
 
 
 const sendRequest = <RequestT extends Request, ResponseT extends Response> (request: RequestT): Promise<ResponseT> => new Promise(resolve => {
@@ -17,6 +17,9 @@ export const getPasswordHash = () =>
 
 export const getDerivedPassword = () => 
     sendRequest<GetDerivedPasswordRequest, GetDerivedPasswordResponse>({ type: 'getDerivedPassword' });
+
+export const getTotpCode = () =>
+    sendRequest<GetTotpCodeRequest, GetTotpCodeResponse>({ type: 'getTotpCode' });
 
 export const storePasswordHash = (entropy: MasterEntropy|undefined, ttl?: number) =>
     sendRequest<StorePasswordHashRequest, StorePasswordHashResponse>({

@@ -6,7 +6,7 @@ import { Configuration, IDomainConfig, load } from "../lib/storage";
 import { load_password_hash } from "./storage";
 
 
-const findDomainMatch = async (entropy: MasterEntropy, domain: string, configs: Configuration): Promise<[string, IDomainConfig, boolean] | undefined> => {
+export const findDomainMatch = async (entropy: MasterEntropy, domain: string, configs: Configuration): Promise<[string, IDomainConfig, boolean] | undefined> => {
     for (const candidateDomain of [domain].concat(getParentDomains(domain))) {
         const domainIds = await getDomainIds(entropy, candidateDomain);
 
