@@ -1,31 +1,32 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { derivePassword as doDerivePassword } from '../../lib/derivation';
-import { InjectionContextHolder } from '../../scriptinjections/context';
 import { PageContext } from '../contexts/PageContext.component';
 import { PasswordContext } from '../contexts/PasswordContext.component';
 import { ConfigurationContext } from '../contexts/ConfigurationContext.component';
 import { UIGroup } from '../uiutils/UIGroup.component';
 import classes from './PasswordGenerator.module.scss';
-import { scripting } from '../../lib/browsercompat';
 
+
+type FocusSelection = 'copy' | 'inject' | undefined;
 
 export const PasswordGenerator: React.FC = () => {
     const storage = useContext(ConfigurationContext);
     const passwordContext = useContext(PasswordContext);
     const context = useContext(PageContext);
-    const [ allowInjection, setAllowInjection ] = useState<boolean>(true);
+    const [allowInjection, setAllowInjection] = useState<boolean>(true);
+    const [focus, setFocus] = useState<FocusSelection>();
     const copyButton = useRef<HTMLInputElement>(null);
     const injectButton = useRef<HTMLInputElement>(null);
 
-    const derivePassword = async (): Promise<string|undefined> => {
+    const derivePassword = async (): Promise<string | undefined> => {
         const entropy = passwordContext?.derivationEntropy;
         const domain = storage.currentDomain;
         const config = storage.currentDomainConfig;
         const useLegacy = storage.useLegacyDerivation;
-        
+
         if (!entropy || !domain || !config)
             return undefined;
-            
+
         return doDerivePassword(entropy, domain, config.passwordLength, config.passwordIteration, config.useSpecialCharacters, config.allowExtraLongPasswords, useLegacy);
     };
 
@@ -38,17 +39,9 @@ export const PasswordGenerator: React.FC = () => {
 
     const injectPassword = async () => {
         const password = await derivePassword();
-        if (!password || !context) return;
+        if (!password || !context?.injection) return;
 
-        await scripting.executeScript({
-            target: {tabId: context.tabId},
-            files: ['contentscript.js']
-        });
-        await scripting.executeScript({
-            target: {tabId: context.tabId},
-            func: password => (window as InjectionContextHolder).ewpassext!.injectPassword!(password),
-            args: [password]
-        });
+        await context.injection.injectPassword(password);
         window.close();
     };
 
@@ -57,11 +50,20 @@ export const PasswordGenerator: React.FC = () => {
     }, [storage.currentDomainIsForPage]);
 
     useEffect(() => {
-        if (allowInjection)
+        const alternativeInput = context?.focusedInputType === 'textinput';
+        setFocus(
+            alternativeInput ? undefined :
+                allowInjection ? 'inject' :
+                    'copy'
+        );
+    }, [allowInjection, context?.focusedInputType]);
+
+    useEffect(() => {
+        if (focus === 'inject')
             injectButton.current?.focus();
-        else
+        else if (focus === 'copy')
             copyButton.current?.focus();
-    }, [allowInjection])
+    }, [focus])
 
     const onButtonKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         const isCopy = event.currentTarget === copyButton.current;
@@ -75,11 +77,11 @@ export const PasswordGenerator: React.FC = () => {
     return storage.currentDomainConfig ? (
         <UIGroup title='Password generator'>
             <div>
-                <input ref={copyButton} type='button' value='Copy to clipboard' disabled={!passwordContext?.derivationEntropy} autoFocus={!allowInjection} onClick={copyPasswordToClipboard} onKeyDown={onButtonKeyDown} className={classes.button}></input>
+                <input ref={copyButton} type='button' value='Copy to clipboard' disabled={!passwordContext?.derivationEntropy} autoFocus={focus === 'copy'} onClick={copyPasswordToClipboard} onKeyDown={onButtonKeyDown} className={classes.button}></input>
             </div>
             {allowInjection ? (
                 <div>
-                    <input ref={injectButton} type='button' value='Inject automatically' disabled={!passwordContext?.derivationEntropy} autoFocus={true} onClick={injectPassword} onKeyDown={onButtonKeyDown} className={classes.button}></input>
+                    <input ref={injectButton} type='button' value='Inject automatically' disabled={!passwordContext?.derivationEntropy} autoFocus={focus === 'inject'} onClick={injectPassword} onKeyDown={onButtonKeyDown} className={classes.button}></input>
                 </div>
             ) : (<></>)}
         </UIGroup>

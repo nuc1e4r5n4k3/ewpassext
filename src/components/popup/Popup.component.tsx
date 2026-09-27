@@ -23,16 +23,25 @@ const PopupComponent: React.FC = () => {
     const [showBackupOptions, setShowBackupOptions] = useState<boolean>(false);
     const pageBottomRef = useRef<HTMLDivElement>(null);
 
+    const passwordSet = passwordContext?.derivationEntropy !== undefined;
+    const ready = storage.totalConfigurations !== undefined;
+    const scrollToBottom = () => pageBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+
     const showBackupOptionsTrigger = async () => {
         await permissions.request(CLIPBOARD_PERMISSION);
         setShowBackupOptions(true);
-        setTimeout(() => pageBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 20);
+        setTimeout(scrollToBottom, 20);
     };
+
+    useEffect(() => {
+        if (ready && passwordSet)
+            scrollToBottom();
+    }, [ready, passwordSet]);
 
     return (
         <div className={classes.Popup}>
             <MasterPassword />
-            {storage.totalConfigurations !== undefined ? <>
+            {ready ? <>
                 <DomainPicker />
                 <DerivationOptions showBackupOptions={showBackupOptionsTrigger} />
                 <Totp />
