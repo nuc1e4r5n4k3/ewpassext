@@ -1,0 +1,24 @@
+A different way to look at password managers.
+
+There is no vault and no stored passwords. You remember one master
+password, and the extension derives a unique password for every website
+from it — computed locally, on the spot, every time you need it. Nothing
+is stored, nothing is sent anywhere, and everything works fully offline.
+
+The same master password plus the same per-site options reproduce the
+same passwords on any device. Back up and restore your per-site options
+via the clipboard.
+
+What the permissions are for
+----------------------------
+
+"Access your data for all websites"
+This is what lets the extension fill in your passwords and one-time
+codes. To do that it needs to see the login field you focus and the
+domain of the site you are on — nothing else. Everything happens on
+your device; no page content ever leaves it and nothing is stored.
+
+"Access browser activity during navigation"
+This simply lets the extension notice when a page has finished loading,
+so it can be ready to fill in your password on login pages. It does not
+track, store, or share where you have been.
